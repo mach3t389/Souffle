@@ -1,0 +1,54 @@
+.theme-toggle{border:1px solid #d9dfd4;border-radius:7px;background:#fff;color:#53634e;font-size:11px;min-height:38px;padding:8px 12px;white-space:nowrap}
+:root[data-theme=dark]{color-scheme:dark;color:#e1e7df;background:#171d1a;--green:#98c9a7;--muted:#a2afa0;--line:#333d35}
+[data-theme=dark] .sidebar{background:#1d251f;border-color:var(--line)}
+[data-theme=dark] .nav-item.active{background:#314637;color:#c4e7cd}
+[data-theme=dark] .nav-item:hover{background:#2a392e}
+[data-theme=dark] .count{background:#40573f;color:#d9e6cf}
+[data-theme=dark] .sidebar-bottom{border-color:#364335}
+[data-theme=dark] .local-icon{background:#314132;color:#b8ceaa}
+[data-theme=dark] .workspace-label,[data-theme=dark] .section-row,[data-theme=dark] .eyebrow{color:#a2b29a}
+[data-theme=dark] .breadcrumb,[data-theme=dark] .text-button,[data-theme=dark] .page-heading p,[data-theme=dark] .local-badge{color:#a5b39e}
+[data-theme=dark] .breadcrumb span{color:#6c7b68}
+[data-theme=dark] .secondary,[data-theme=dark] .theme-toggle{background:#273129;border-color:#414e3e;color:#dde7d7}
+[data-theme=dark] .primary{background:#91bfa0;color:#152a1c}
+[data-theme=dark] .primary:hover{background:#acd5b8}
+[data-theme=dark] .document-tabs{border-color:var(--line)}
+[data-theme=dark] .document-tab{color:#a7b39e}
+[data-theme=dark] .document-tab.selected{color:#b9dfc3}
+[data-theme=dark] .import-button,[data-theme=dark] .icon-button{color:#b4c3a9}
+[data-theme=dark] .project-card{background:#202922;border-color:#364033}
+[data-theme=dark] .document-panel{background:#242424;border-color:#3c3c3c}
+[data-theme=dark] .project-card:hover{border-color:#91b584}
+[data-theme=dark] .document-heading input{color:#ededed}
+[data-theme=dark] .document-heading .eyebrow,[data-theme=dark] .document-heading .icon-button{color:#b2b2b2}
+[data-theme=dark] .toolbar{background:#2b2b2b;border-color:#3c3c3c}
+[data-theme=dark] .toolbar select{color:#c8c8c8}
+[data-theme=dark] .toolbar button:hover,[data-theme=dark] .toolbar .pressed{background:#3c5140;color:#c5e8ce}
+[data-theme=dark] .separator{background:#484848}
+[data-theme=dark] .tiptap{background:#242424;color:#d2d2d2}
+[data-theme=dark] .tiptap h1,[data-theme=dark] .tiptap h2,[data-theme=dark] .tiptap h3{color:#ededed}
+[data-theme=dark] .tiptap ::selection{background:#536f53;color:#fff}
+[data-theme=dark] .document-footer{border-color:#3c3c3c;color:#ababab}
+[data-theme=dark] .document-footer span:first-child{color:#b8b8b8}
+[data-theme=dark] .reading-card{background:#2b392b;border-color:#3a4a35}
+[data-theme=dark] .reading-card .eyebrow,[data-theme=dark] .reading-card p,[data-theme=dark] .muted{color:#adbea0}
+[data-theme=dark] .mini-prompt{background:#384b35;border-color:#4a5d41;box-shadow:3px 5px #243420}
+[data-theme=dark] .mini-prompt div{background:#5a7050}
+[data-theme=dark] .mini-prompt div.highlight{background:#a4bf8b}
+[data-theme=dark] .chapter{color:#bacbad}
+[data-theme=dark] .chapter span{color:#94a786}
+[data-theme=dark] .remote-card{border-color:#3c4837}
+[data-theme=dark] .remote-card p,[data-theme=dark] .tip{color:#a4b198}
+[data-theme=dark] .tip strong{color:#c0d0b3}
+[data-theme=dark] .coming,[data-theme=dark] .card-icon{background:#34462f;color:#c0d0b3}
+[data-theme=dark] dialog{background:#263129;color:#e2eadd;border-color:#4c5d43}
+[data-theme=dark] dialog input{background:#1d261f;color:#e2eadd;border-color:#52654a}
+@media(max-width:600px){.topbar{height:auto;min-height:60px;flex-wrap:wrap;padding-block:10px;gap:10px}.top-actions{flex-wrap:wrap;gap:12px}.theme-toggle{min-height:44px;font-size:11px}.breadcrumb{max-width:100%}}
+[data-theme=light] .document-panel{background:#fff;border-color:#e4e4e4}
+[data-theme=light] .toolbar{background:#fafafa;border-color:#eaeaea}
+[data-theme=light] .toolbar select{color:#626262}
+[data-theme=light] .separator{background:#e2e2e2}
+[data-theme=light] .tiptap{background:#fff;color:#515151}
+[data-theme=light] .tiptap h1,[data-theme=light] .tiptap h2,[data-theme=light] .tiptap h3{color:#303030}
+[data-theme=light] .document-heading input{color:#292929}
+[data-theme=light] .document-footer{border-color:#eaeaea;color:#858585}
