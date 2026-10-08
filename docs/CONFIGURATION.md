@@ -3,7 +3,7 @@
 Le fonctionnement local est disponible immédiatement. Les fonctions cloud utilisent un vrai projet Supabase; aucun compte fictif ni base publique de démonstration n’est fourni.
 
 1. Créer ou choisir un projet Supabase.
-2. Dans SQL Editor, appliquer dans l’ordre les fichiers `supabase/migrations/001_workspace.sql` et `002_reading_sessions.sql`. Ces migrations sont également compatibles avec le suivi de migrations du CLI Supabase. Les appliquer une seule fois dans une base vierge; ne pas modifier une migration déjà déployée.
+2. Dans SQL Editor, appliquer dans l’ordre les fichiers `supabase/migrations/001_workspace.sql`, `002_reading_sessions.sql`, puis `003_session_maintenance.sql` (maintenance du service Supabase hébergé). Ces migrations sont également compatibles avec le suivi de migrations du CLI Supabase. Les appliquer une seule fois dans une base vierge; ne pas modifier une migration déjà déployée.
 3. Copier `.env.example` en `.env.local`, puis renseigner l’URL du projet et sa clé publique publishable. Ne jamais mettre une clé secrète ou `service_role` dans une variable `VITE_` : ces valeurs sont intégrées au navigateur.
 4. Dans Authentication / URL Configuration, définir l’URL du site. Autoriser l’origine de développement et celle de production, avec les routes de retour nécessaires, notamment `/#nouveau-mot-de-passe`.
 5. Activer l’authentification courriel/mot de passe et la confirmation de courriel. Configurer l’expéditeur SMTP pour les confirmations et récupérations. Vérifier la délivrabilité avec une adresse de test.
@@ -33,16 +33,29 @@ En cas de coupure, une lecture en cours continue localement; au rétablissement 
 
 ## Exploitation
 
-Activer et vérifier les sauvegardes de la base selon le plan Supabase retenu. Conserver une procédure de restauration testée. Les points de sauvegarde internes à un script sont limités aux 30 derniers et ne remplacent pas une sauvegarde de la base. Prévoir le nettoyage des sessions expirées et révoquées avant un usage prolongé : leurs snapshots contiennent encore le script.
+Activer et vérifier les sauvegardes de la base selon le plan Supabase retenu. Conserver une procédure de restauration testée. Les points de sauvegarde internes à un script sont limités aux 30 derniers et ne remplacent pas une sauvegarde de la base. La migration `003_session_maintenance.sql` active un nettoyage horaire des sessions expirées ou révoquées et conserve sept jours de journaux pour cette tâche. Les projets et l’historique des scripts ne sont pas supprimés. Vérifier les exécutions dans Integrations / Cron. Cette migration utilise `pg_cron` et vise le service Supabase hébergé.
 
 Les parcours de courriel, les connexions entre appareils sur le service hébergé et la compatibilité physique iOS 12.5.8 doivent être validés avec la configuration réelle. Les tests PostgreSQL embarqués couvrent les migrations et permissions, mais ne remplacent pas ces essais.
 
 ## Déployer sur Vercel
 
-Importer le dépôt GitHub dans Vercel. Le fichier `vercel.json` fixe le framework Vite, la commande `npm run build` et le dossier de sortie `dist`. Le studio est servi à la racine, et le lecteur indépendant à `/lecteur.html`.
+Importer le dépôt GitHub dans Vercel. Le fichier `vercel.json` fixe le framework Vite, la commande `npm test && npm run build` et le dossier de sortie `dist`. Le studio est servi à la racine, et le lecteur indépendant à `/lecteur.html`.
 
 Pour activer les comptes et la télécommande, ajouter `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY` aux variables d’environnement du projet Vercel avant la compilation. Seules les clés publiques sont destinées au navigateur. Ajouter ensuite l’adresse HTTPS déployée aux URL autorisées dans Supabase Auth et vérifier les parcours de courriel ainsi que la connexion iPhone/iPad.
 
 Un déploiement sans ces variables propose le fonctionnement local sur chaque appareil; il ne synchronise pas les projets entre appareils. Les scripts stockés dans le navigateur ne font pas partie de la sauvegarde du code sur GitHub : utiliser « Exporter » pour en conserver une copie.
 
 Documentation : https://vercel.com/docs/frameworks/frontend/vite
+
+## Configuration de production — 7 octobre 2026
+
+- Site : https://souffle-chi.vercel.app
+- Projet Supabase dédié : `faqtxhowyeqzeailpfct`, région Canada Central.
+- Migrations 001, 002 et 003 appliquées; RLS activée sur les deux tables.
+- Variables publiques Supabase configurées dans l’environnement **Production** de Vercel. Aucune clé secrète n’est incluse dans le navigateur.
+- Site URL Supabase : `https://souffle-chi.vercel.app`.
+- Retours autorisés : `https://souffle-chi.vercel.app/` et `https://souffle-chi.vercel.app/#nouveau-mot-de-passe`.
+- Inscription par courriel et confirmation activées.
+- Tests transactionnels sur le serveur : sauvegarde, isolation entre comptes, conflits de révision et de séquence, accès au lecteur par jeton, révocation et remplacement du snapshot. Les données de test ont été annulées.
+
+L’expéditeur SMTP personnalisé reste à configurer. Le service de courriel Supabase par défaut est limité aux adresses des membres du projet et sert aux essais; il ne constitue pas un expéditeur de production. Voir [la documentation Supabase SMTP](https://supabase.com/docs/guides/auth/auth-smtp). Valider l’inscription, la récupération de mot de passe et les essais entre appareils après cette configuration. Aucune sauvegarde externe automatique de la base n’est encore configurée; exporter régulièrement les projets depuis Souffle.
