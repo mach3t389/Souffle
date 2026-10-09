@@ -27,7 +27,7 @@ npm test
 
 ## Intégration cloud implémentée, activation requise
 
-Les pages de connexion, inscription, récupération et réinitialisation du mot de passe appellent Supabase Auth lorsque configuré. Sans configuration, l’interface affiche clairement cet état et les envois sont désactivés.
+Le site hébergé exige une connexion Supabase; les visiteurs sans session ne voient pas l’espace de travail. La création de compte n’est pas offerte dans l’interface. Le mode local reste disponible pendant le développement sans configuration cloud. Cette restriction d’interface doit être accompagnée de la désactivation des nouvelles inscriptions dans Supabase (voir [la configuration détaillée](docs/CONFIGURATION.md)); le fournisseur d’authentification reste l’autorité qui bloque réellement la création de comptes. Le formulaire prend en charge Cloudflare Turnstile si sa clé publique est définie, et peut envoyer le jeton CAPTCHA à Supabase pour la connexion et la récupération de mot de passe.
 
 L’espace cloud utilise une ligne JSON par compte avec révision atomique, droits de lecture par propriétaire et écritures via une fonction serveur. Ce choix protège les écritures concurrentes mais produit des conflits à l’échelle de l’espace entier. Une séparation future par document réduira ces conflits pour un usage en équipe.
 
@@ -44,3 +44,4 @@ Voir [la configuration détaillée](docs/CONFIGURATION.md) et `.env.example`. Au
 La compatibilité physique iOS 12.5.8, les courriels d’authentification, la fluidité sur l’iPad et le déploiement HTTPS restent à valider avec les appareils et services réels.
 
 L’audit npm initial signale trois alertes modérées transitives dans la chaîne CLI de Mammoth (`argparse` / `sprintf-js`). Aucun correctif compatible n’est proposé. Ne pas appliquer le retour à une ancienne version suggéré par `npm audit fix --force` sans étude. L’application utilise la conversion navigateur, pas le CLI Mammoth.
+

@@ -7,13 +7,16 @@ Le fonctionnement local est disponible immédiatement. Les fonctions cloud utili
 3. Copier `.env.example` en `.env.local`, puis renseigner l’URL du projet et sa clé publique publishable. Ne jamais mettre une clé secrète ou `service_role` dans une variable `VITE_` : ces valeurs sont intégrées au navigateur.
 4. Dans Authentication / URL Configuration, définir l’URL du site. Autoriser l’origine de développement et celle de production, avec les routes de retour nécessaires, notamment `/#nouveau-mot-de-passe`.
 5. Activer l’authentification courriel/mot de passe et la confirmation de courriel. Configurer l’expéditeur SMTP pour les confirmations et récupérations. Vérifier la délivrabilité avec une adresse de test.
-6. Redémarrer `npm run dev` après l’ajout de `.env.local`. En production, fournir les mêmes variables au moment du build, puis servir `dist` en HTTPS.
+6. Pour le site personnel public, désactiver **Allow new users to sign up** dans Authentication / Sign In / Providers et désactiver les connexions anonymes. Garder uniquement les comptes que tu reconnais dans Authentication / Users; ces réglages bloquent les nouvelles inscriptions côté serveur, y compris les appels directs à l’API.
+7. Supabase Auth applique déjà des limites de débit par adresse IP. Dans ce projet, le seuil « sign-ups and sign-ins » est abaissé à 10 requêtes par 5 minutes. Vérifier cette valeur dans Authentication / Rate Limits et protéger le compte propriétaire avec un mot de passe unique et l’authentification multifacteur.
+8. La prise en charge Cloudflare Turnstile est ajoutée à l’application, mais la protection CAPTCHA Supabase ne peut être activée qu’après création d’un site Turnstile et ajout de ses clés dans Cloudflare, Supabase et Vercel. La clé secrète doit rester uniquement dans Supabase; la clé de site publique va dans `VITE_TURNSTILE_SITE_KEY` sur Vercel.
+9. Redémarrer `npm run dev` après l’ajout de `.env.local`. En production, fournir les variables à Vercel au moment du build, puis servir `dist` en HTTPS.
 
 ## Vérification avant utilisation du cloud
 
-- Créer deux comptes de test A et B, confirmer leurs courriels.
-- Compte A : créer un projet; l’ouvrir sur un deuxième appareil connecté à A.
-- Compte B : vérifier qu’aucun document ni aucune session de A n’est accessible.
+- Pour l’utilisation personnelle, ne pas créer de comptes publics de test. Vérifier que le propriétaire peut se connecter et récupérer son mot de passe.
+- Vérifier séparément avec les tests automatisés que les politiques isolent les espaces entre comptes; conserver l’inscription désactivée sur le projet de production.
+- Vérifier qu’un appel direct d’inscription est refusé par Supabase, et pas seulement caché dans l’interface.
 - Éditer en même temps depuis deux appareils et vérifier la résolution explicite du conflit. Le bouton « Conserver les deux » crée des projets distincts; il ne fusionne pas les paragraphes.
 - Couper Internet, modifier un script, puis rétablir la connexion. Le brouillon local doit être conservé et synchronisé ou signalé en conflit.
 - Tester « Mot de passe oublié » et le lien de réinitialisation, ainsi qu’un lien expiré. Une session de récupération valide est nécessaire pour enregistrer un nouveau mot de passe.
@@ -41,7 +44,7 @@ Les parcours de courriel, les connexions entre appareils sur le service héberg�
 
 Importer le dépôt GitHub dans Vercel. Le fichier `vercel.json` fixe le framework Vite, la commande `npm test && npm run build` et le dossier de sortie `dist`. Le studio est servi à la racine, et le lecteur indépendant à `/lecteur.html`.
 
-Pour activer les comptes et la télécommande, ajouter `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY` aux variables d’environnement du projet Vercel avant la compilation. Seules les clés publiques sont destinées au navigateur. Ajouter ensuite l’adresse HTTPS déployée aux URL autorisées dans Supabase Auth et vérifier les parcours de courriel ainsi que la connexion iPhone/iPad.
+Pour activer la connexion et la télécommande, ajouter `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY` aux variables d’environnement du projet Vercel avant la compilation. Ajouter `VITE_TURNSTILE_SITE_KEY` seulement après avoir créé et configuré Turnstile dans Supabase. Seules les clés publiques sont destinées au navigateur; le secret Turnstile reste dans Supabase. Ajouter ensuite l’adresse HTTPS déployée aux URL autorisées dans Supabase Auth et vérifier la connexion, la récupération et l’accès iPhone/iPad.
 
 Un déploiement sans ces variables propose le fonctionnement local sur chaque appareil; il ne synchronise pas les projets entre appareils. Les scripts stockés dans le navigateur ne font pas partie de la sauvegarde du code sur GitHub : utiliser « Exporter » pour en conserver une copie.
 
@@ -55,7 +58,9 @@ Documentation : https://vercel.com/docs/frameworks/frontend/vite
 - Variables publiques Supabase configurées dans l’environnement **Production** de Vercel. Aucune clé secrète n’est incluse dans le navigateur.
 - Site URL Supabase : `https://souffle-chi.vercel.app`.
 - Retours autorisés : `https://souffle-chi.vercel.app/` et `https://souffle-chi.vercel.app/#nouveau-mot-de-passe`.
-- Inscription par courriel et confirmation activées.
+- Inscription publique désactivée dans Supabase; connexions anonymes désactivées; confirmation de courriel maintenue pour les comptes existants.
+- Limite Auth « sign-ups and sign-ins » abaissée à 10 requêtes par 5 minutes et par adresse IP.
+- CAPTCHA Turnstile non activé : un compte Cloudflare/site key et son secret Supabase sont encore nécessaires.
 - Tests transactionnels sur le serveur : sauvegarde, isolation entre comptes, conflits de révision et de séquence, accès au lecteur par jeton, révocation et remplacement du snapshot. Les données de test ont été annulées.
 
 L’expéditeur SMTP personnalisé reste à configurer. Le service de courriel Supabase par défaut est limité aux adresses des membres du projet et sert aux essais; il ne constitue pas un expéditeur de production. Voir [la documentation Supabase SMTP](https://supabase.com/docs/guides/auth/auth-smtp). Valider l’inscription, la récupération de mot de passe et les essais entre appareils après cette configuration. Aucune sauvegarde externe automatique de la base n’est encore configurée; exporter régulièrement les projets depuis Souffle.
