@@ -27,7 +27,7 @@ npm test
 
 ## Intégration cloud implémentée, activation requise
 
-Le site hébergé exige une connexion Supabase; les visiteurs sans session ne voient pas l’espace de travail. La création de compte n’est pas offerte dans l’interface. Le mode local reste disponible pendant le développement sans configuration cloud. Cette restriction d’interface doit être accompagnée de la désactivation des nouvelles inscriptions dans Supabase (voir [la configuration détaillée](docs/CONFIGURATION.md)); le fournisseur d’authentification reste l’autorité qui bloque réellement la création de comptes. Le formulaire prend en charge Cloudflare Turnstile si sa clé publique est définie, et peut envoyer le jeton CAPTCHA à Supabase pour la connexion et la récupération de mot de passe.
+Le site hébergé exige une connexion Supabase; les visiteurs sans session ne voient pas l’espace de travail. La création de compte n’est pas offerte dans l’interface. Le mode local reste disponible pendant le développement sans configuration cloud. Cette restriction d’interface doit être accompagnée de la désactivation des nouvelles inscriptions dans Supabase (voir [la configuration détaillée](docs/CONFIGURATION.md)); le fournisseur d’authentification reste l’autorité qui bloque réellement la création de comptes. Le formulaire prend en charge Cloudflare Turnstile si sa clé publique est définie. Le propriétaire connecté peut changer son mot de passe dans « Mon compte »; aucune récupération par courriel n’est proposée.
 
 L’espace cloud utilise une ligne JSON par compte avec révision atomique, droits de lecture par propriétaire et écritures via une fonction serveur. Ce choix protège les écritures concurrentes mais produit des conflits à l’échelle de l’espace entier. Une séparation future par document réduira ces conflits pour un usage en équipe.
 
@@ -41,7 +41,6 @@ Voir [la configuration détaillée](docs/CONFIGURATION.md) et `.env.example`. Au
 
 `npm test` exécute les tests du modèle et les deux migrations sur PostgreSQL embarqué PGlite avec pgcrypto : isolation de comptes, interdiction des écritures directes, conflits atomiques, accès limité au lecteur, séquences, confirmations et révocation. `npm run build` vérifie TypeScript et produit `dist`.
 
-La compatibilité physique iOS 12.5.8, les courriels d’authentification, la fluidité sur l’iPad et le déploiement HTTPS restent à valider avec les appareils et services réels.
+La compatibilité physique iOS 12.5.8, la fluidité sur l’iPad et le déploiement HTTPS restent à valider avec les appareils et services réels.
 
 L’audit npm initial signale trois alertes modérées transitives dans la chaîne CLI de Mammoth (`argparse` / `sprintf-js`). Aucun correctif compatible n’est proposé. Ne pas appliquer le retour à une ancienne version suggéré par `npm audit fix --force` sans étude. L’application utilise la conversion navigateur, pas le CLI Mammoth.
-
