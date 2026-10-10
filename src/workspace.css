@@ -231,4 +231,3 @@ dialog button:disabled,.auth-card button:disabled{opacity:.5;cursor:default}
 
 .new-script-label-short{display:none}
 @media(max-width:600px){.new-script-label{display:none}.new-script-label-short{display:inline}.script-bar>.button{margin-left:0}}
-
