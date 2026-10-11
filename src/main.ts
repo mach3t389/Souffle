@@ -295,6 +295,16 @@ async function remoteDialog(s:Script){
    ;[mirrorX,mirrorY].forEach(button=>button.onclick=()=>{button.setAttribute('aria-pressed',String(button.getAttribute('aria-pressed')!=='true'));syncPreview()})
    position.onchange=()=>{markPosition();if(position.value)previewContent.querySelector<HTMLElement>(`[data-id="${CSS.escape(position.value)}"]`)?.scrollIntoView({behavior:'smooth',block:'center'});else preview.scrollTo({top:0,behavior:'smooth'})}
    preview.onclick=event=>{const block=(event.target as HTMLElement).closest<HTMLElement>('[data-id]');if(block?.dataset.id){position.value=block.dataset.id;markPosition()}}
+   preview.addEventListener('scroll',()=>{
+    if(preview.scrollTop<16){if(position.value){position.value='';markPosition()}return}
+    const line=preview.getBoundingClientRect().top+preview.clientHeight*.52
+    let current:HTMLElement|null=null
+    for(const block of previewContent.querySelectorAll<HTMLElement>('[data-id]')){
+     if(block.getBoundingClientRect().top>line)break
+     current=block
+    }
+    if(current?.dataset.id&&position.value!==current.dataset.id){position.value=current.dataset.id;markPosition()}
+   },{passive:true})
    if(link)within<HTMLButtonElement>('#copy-link').onclick=()=>{const input=within<HTMLInputElement>('#session-link');input.select();void navigator.clipboard.writeText(link).then(()=>feedback.textContent='Lien copié.').catch(()=>feedback.textContent='Sélectionne et copie le lien affiché.')}
    const command=async(action:string)=>{
     if(busy)return
