@@ -218,23 +218,115 @@ if(cloud){void cloud.auth.getSession().then(({data})=>{authLoaded=true;void swit
 
 async function remoteDialog(s:Script){
  if(!cloud||!user){dialog('Télécommande','<p>Connecte ton compte Supabase pour associer un appareil à une session.</p><a class="button primary" href="#connexion">Se connecter</a>');return}
- capture();snapshot(s);store();const html=editor!.getHTML(),heads=Array.from(editor!.view.dom.querySelectorAll<HTMLElement>('p,h1,h2,h3')).filter(n=>n.dataset.id)
- const d=dialog('Télécommande',`<p>Le lecteur utilise une version figée du script. Le lien donne accès à cette lecture pendant deux heures.</p>${['localhost','127.0.0.1'].includes(location.hostname)?'<p class="form-error">Pour ouvrir le lecteur sur un autre appareil, accède d’abord à Souffle par son adresse réseau ou son adresse web publique.</p>':''}<button id="create-session" class="button primary">Créer une session</button><div id="session-list"></div><div id="remote-content"></div><p id="remote-message" role="status"></p>`)
+ capture();snapshot(s);store()
+ const html=editor!.getHTML()
+ const blocks=Array.from(editor!.view.dom.querySelectorAll<HTMLElement>('p,h1,h2,h3')).filter(node=>node.dataset.id)
+ const d=dialog('Télécommande',`<div class="remote-intro" id="remote-intro"><p>Contrôle la lecture sur un autre appareil. Le lien est valable deux heures et utilise une copie du script.</p>${['localhost','127.0.0.1'].includes(location.hostname)?'<p class="form-error">Ouvre Souffle par son adresse web publique pour associer un autre appareil.</p>':''}<button id="create-session" class="button primary">Créer une session</button><div id="session-list"></div></div><div id="remote-content" hidden></div><p id="remote-message" role="status" aria-live="polite"></p>`)
+ d.classList.add('remote-stage')
+ d.addEventListener('close',()=>d.classList.remove('remote-stage'),{once:true})
+ const within=<T extends HTMLElement>(selector:string)=>d.querySelector<T>(selector)!
+ const feedback=within<HTMLElement>('#remote-message')
  const sessions=await cloud.from('reading_sessions').select('id,expires_at,last_seen,sequence').eq('revoked',false).gt('expires_at',new Date().toISOString())
  if(!d.open)return
- if(sessions.data?.length){$('#session-list').innerHTML='<h3>Sessions existantes</h3>'+sessions.data.map((session,index)=>`<div class="session-row"><span>Session ${index+1} · expire à ${new Date(session.expires_at).toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'})}</span><button class="button secondary" data-resume-session="${session.id}">Contrôler</button><button class="button secondary" data-update-session="${session.id}">Charger ce script</button><button class="button secondary" data-end-session="${session.id}">Terminer</button></div>`).join('');document.querySelectorAll<HTMLButtonElement>('[data-end-session]').forEach(b=>b.onclick=async()=>{const {error}=await cloud!.rpc('revoke_reading_session',{session_id:b.dataset.endSession});if(error){$('#remote-message').textContent=error.message;return}b.closest('.session-row')?.remove()})}
+ if(sessions.error)feedback.textContent='Impossible de charger les sessions existantes.'
+ if(sessions.data?.length){
+  within<HTMLElement>('#session-list').innerHTML=`<details class="remote-existing"><summary>Sessions existantes (${sessions.data.length})</summary>${sessions.data.map((session,index)=>`<div class="session-row"><span>Session ${index+1} · expire à ${new Date(session.expires_at).toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'})}</span><button class="button secondary" data-resume-session="${esc(session.id)}">Contrôler</button><button class="button secondary" data-update-session="${esc(session.id)}">Charger ce script</button><button class="button secondary" data-end-session="${esc(session.id)}">Terminer</button></div>`).join('')}</details>`
+  d.querySelectorAll<HTMLButtonElement>('[data-resume-session]').forEach(button=>button.onclick=()=>{
+   const existing=sessions.data?.find(item=>item.id===button.dataset.resumeSession)
+   if(existing){reconnect={id:existing.id,token:'',sequence:existing.sequence};within<HTMLButtonElement>('#create-session').click()}
+  })
+  d.querySelectorAll<HTMLButtonElement>('[data-update-session]').forEach(button=>button.onclick=async()=>{
+   const {error}=await cloud!.rpc('update_reading_snapshot',{session_id:button.dataset.updateSession,new_snapshot:{title:s.title,html,revision:s.revision,settings:workspace.settings}})
+   feedback.textContent=error?error.message:'Nouvelle version envoyée au lecteur en pause.'
+  })
+  d.querySelectorAll<HTMLButtonElement>('[data-end-session]').forEach(button=>button.onclick=async()=>{
+   const {error}=await cloud!.rpc('revoke_reading_session',{session_id:button.dataset.endSession})
+   if(error){feedback.textContent=error.message;return}
+   button.closest('.session-row')?.remove()
+  })
+ }
  let reconnect:{id:string;token:string;sequence:number}|null=null
- document.querySelectorAll<HTMLButtonElement>('[data-resume-session]').forEach(b=>b.onclick=()=>{const existing=sessions.data?.find(s=>s.id===b.dataset.resumeSession);if(existing){reconnect={id:existing.id,token:'',sequence:existing.sequence};$('#create-session').click();window.setTimeout(()=>{const input=document.querySelector<HTMLInputElement>('#session-link');if(input){input.value='Le lien initial reste valable sur le lecteur déjà associé.';$('#copy-link').hidden=true}},0)}})
- document.querySelectorAll<HTMLButtonElement>('[data-update-session]').forEach(b=>b.onclick=async()=>{const {error}=await cloud!.rpc('update_reading_snapshot',{session_id:b.dataset.updateSession,new_snapshot:{title:s.title,html,revision:s.revision,settings:workspace.settings}});$('#remote-message').textContent=error?error.message:'Nouvelle version envoyée au lecteur en pause.'})
- $('#create-session').onclick=async()=>{const button=$<HTMLButtonElement>('#create-session');button.disabled=true;try{const {data,error}=reconnect?{data:reconnect,error:null}:await cloud!.rpc('create_reading_session',{snapshot: {title:s.title,html,revision:s.revision,settings:workspace.settings}});if(error)throw error;const token=data.token as string;const link=location.origin+'/lecteur.html#'+new URLSearchParams({server:cloudUrl,key:cloudKey,token}).toString();$('#remote-content').innerHTML=`<label>Lien à ouvrir sur l’iPad<input id="session-link" readonly value="${esc(link)}"></label><button id="copy-link" class="button secondary">Copier le lien</button><p id="remote-status" role="status">En attente du lecteur…</p><label>Position de reprise<select id="remote-position"><option value="">Début du script</option>${heads.map(n=>`<option value="${esc(n.dataset.id!)}">${esc((n.textContent||'Paragraphe').slice(0,70))}</option>`).join('')}</select></label><div class="dialog-actions"><button id="remote-pause" class="button secondary">Pause</button><button id="remote-seek" class="button secondary">Aller ici</button><button id="remote-play" class="button primary">▷ Lire ici</button></div><label>Vitesse (px/s)<input id="remote-speed" type="number" min="5" max="120" value="${workspace.settings.speed}"></label><button id="apply-remote-speed" class="button secondary">Appliquer la vitesse</button><details><summary>Réglages du lecteur</summary><label>Taille du texte<input id="remote-size" type="number" min="28" max="100" value="${workspace.settings.size}"></label><label>Décompte<select id="remote-countdown"><option value="0">Aucun</option><option value="3">3 secondes</option><option value="5">5 secondes</option><option value="10">10 secondes</option></select></label><label>Police<select id="remote-font"><option value="sans-serif">Sans sérif</option><option value="Georgia">Georgia</option><option value="original">Polices du document</option></select></label><label class="inline-check"><input id="remote-mirror-x" type="checkbox">Miroir horizontal</label><label class="inline-check"><input id="remote-mirror-y" type="checkbox">Miroir vertical</label><label class="inline-check"><input id="remote-proportional" type="checkbox">Tailles proportionnelles</label><button id="remote-apply-settings" class="button secondary">Appliquer les réglages</button></details><button id="revoke-session" class="button secondary">Terminer la session</button>`;button.hidden=true;$('#copy-link').onclick=()=>{const input=$<HTMLInputElement>('#session-link');input.select();void navigator.clipboard.writeText(link).then(()=>$('#remote-message').textContent='Lien copié.').catch(()=>$('#remote-message').textContent='Sélectionne et copie le lien affiché.')};let sequence=Number(data.sequence||0),busy=false;
- $<HTMLSelectElement>('#remote-position').value=readingStart?.scriptId===s.id?readingStart.blockId:'';
- $<HTMLSelectElement>('#remote-countdown').value=String(workspace.settings.countdown);$<HTMLSelectElement>('#remote-font').value=workspace.settings.font;$<HTMLInputElement>('#remote-mirror-x').checked=workspace.settings.mirrorX;$<HTMLInputElement>('#remote-mirror-y').checked=workspace.settings.mirrorY;$<HTMLInputElement>('#remote-proportional').checked=workspace.settings.proportional
- const command=async(action:string)=>{if(busy)return;busy=true;try{const speed=Math.round(Math.max(5,Math.min(120,Number($<HTMLInputElement>('#remote-speed').value)||35)));const countdown=Number($<HTMLSelectElement>('#remote-countdown').value);const {data,error}=await cloud!.rpc('send_reading_command',{session_id:dataId,expected_sequence:sequence,command:{action,blockId:$<HTMLSelectElement>('#remote-position').value,speed,countdown,settings:{speed,countdown,size:Math.max(28,Math.min(100,Number($<HTMLInputElement>('#remote-size').value)||54)),font:$<HTMLSelectElement>('#remote-font').value,mirrorX:$<HTMLInputElement>('#remote-mirror-x').checked,mirrorY:$<HTMLInputElement>('#remote-mirror-y').checked,proportional:$<HTMLInputElement>('#remote-proportional').checked}}});if(error)throw error;if(data.conflict)throw new Error('La session a changé. Réessaie après sa mise à jour.');sequence=data.sequence;$('#remote-message').textContent='Commande envoyée · confirmation en attente.'}catch(e){$('#remote-message').textContent=message(e)}finally{busy=false}}
- const dataId=data.id as string;$('#remote-pause').onclick=()=>void command('pause');$('#remote-seek').onclick=()=>void command('seek');$('#remote-play').onclick=()=>void command('play');$('#apply-remote-speed').onclick=()=>void command('speed');$('#remote-apply-settings').onclick=()=>void command('settings');$('#revoke-session').onclick=async()=>{const {error}=await cloud!.rpc('revoke_reading_session',{session_id:dataId});if(error){$('#remote-message').textContent=error.message;return}d.close();toast('Session terminée.')};
- remotePoll=window.setInterval(async()=>{if(document.hidden||!d.open)return;const {data:state,error}=await cloud!.from('reading_sessions').select('sequence,ack_sequence,last_seen,reader_state,expires_at,revoked').eq('id',dataId).single();if(!document.body.contains(d)||!d.open)return;if(error){$('#remote-status').textContent='Connexion au serveur interrompue.';return}sequence=state.sequence;const connected=state.last_seen&&Date.now()-new Date(state.last_seen).getTime()<15000;$('#remote-status').textContent=state.revoked?'Session terminée':!connected?'Lecteur déconnecté ou en attente':state.ack_sequence===state.sequence?`Lecteur connecté · ${state.reader_state==='playing'?'lecture':state.reader_state==='countdown'?'décompte':'en pause'} · commande confirmée`:'Lecteur connecté · commande en attente'},5000)
- }catch(e){$('#remote-message').textContent=message(e);button.disabled=false}}
+ within<HTMLButtonElement>('#create-session').onclick=async()=>{
+  const createButton=within<HTMLButtonElement>('#create-session')
+  createButton.disabled=true
+  try{
+   const {data,error}=reconnect?{data:reconnect,error:null}:await cloud!.rpc('create_reading_session',{snapshot:{title:s.title,html,revision:s.revision,settings:workspace.settings}})
+   if(error)throw error
+   const sessionId=data.id as string
+   const link=data.token?location.origin+'/lecteur.html#'+new URLSearchParams({server:cloudUrl,key:cloudKey,token:data.token as string}).toString():''
+   let sequence=Number(data.sequence||0),busy=false
+   const content=within<HTMLElement>('#remote-content')
+   content.hidden=false
+   within<HTMLElement>('#remote-intro').hidden=true
+   content.innerHTML=`<div class="remote-stage-top"><div><span class="remote-kicker">SCRIPT EN COURS</span><strong>${esc(s.title)}</strong></div><span id="remote-status" class="remote-status" role="status">Lecteur en attente</span></div>
+    <div class="remote-connection"><details id="remote-link-details" ${link?'open':''}><summary>Connecter l’iPad</summary>${link?`<div class="remote-link-row"><input id="session-link" aria-label="Lien du lecteur" readonly value="${esc(link)}"><button id="copy-link" class="button secondary">Copier le lien</button></div>`:'<p>Le lien initial reste valable sur le lecteur déjà associé.</p>'}</details><button id="revoke-session" class="remote-text-button">Terminer la session</button></div>
+    <div class="remote-preview-shell"><div class="remote-preview-head"><div><strong>Aperçu du lecteur</strong><span>Fais défiler le texte ou choisis un passage pour la reprise.</span></div><label>Position<select id="remote-position"><option value="">Début du script</option>${blocks.map(node=>`<option value="${esc(node.dataset.id!)}">${esc((node.textContent||'Paragraphe').slice(0,70))}</option>`).join('')}</select></label></div><div id="remote-preview" class="remote-preview" tabindex="0" aria-label="Aperçu du script et choix du passage"><article id="remote-preview-content">${html}</article></div></div>
+    <div class="remote-console"><div class="remote-console-head"><strong>Commandes du lecteur</strong><span>Les changements sont envoyés à l’iPad lorsque tu les appliques.</span></div><div class="remote-control-grid">
+     <section class="remote-control-section"><h3>Lecture</h3><div class="remote-field-grid"><div class="remote-field"><span>Vitesse</span><div class="remote-stepper"><button id="remote-speed-minus" aria-label="Diminuer la vitesse">−</button><input id="remote-speed" aria-label="Vitesse en pixels par seconde" type="number" inputmode="numeric" min="5" max="120" value="${workspace.settings.speed}"><small>px/s</small><button id="remote-speed-plus" aria-label="Augmenter la vitesse">+</button></div><input id="remote-speed-range" type="range" min="5" max="120" value="${workspace.settings.speed}" aria-label="Régler la vitesse"></div><label class="remote-field">Décompte<select id="remote-countdown"><option value="0">Aucun</option><option value="3">3 s</option><option value="5">5 s</option><option value="10">10 s</option></select></label></div><div class="remote-transport"><button id="remote-pause" class="button secondary">Ⅱ Pause</button><button id="remote-seek" class="button secondary">Aller ici</button><button id="remote-play" class="button primary">▷ Lire ici</button></div></section>
+     <section class="remote-control-section"><h3>Texte</h3><div class="remote-field-grid"><div class="remote-field"><span>Taille du texte</span><div class="remote-stepper"><button id="remote-size-minus" aria-label="Diminuer la taille du texte">−</button><input id="remote-size" aria-label="Taille du texte en pixels" type="number" inputmode="numeric" min="28" max="100" value="${workspace.settings.size}"><small>px</small><button id="remote-size-plus" aria-label="Augmenter la taille du texte">+</button></div></div><label class="remote-field">Police<select id="remote-font"><option value="sans-serif">Sans sérif</option><option value="Georgia">Georgia</option><option value="original">Polices du document</option></select></label></div><label class="remote-check"><input id="remote-proportional" type="checkbox"> Tailles relatives du script</label></section>
+     <section class="remote-control-section"><h3>Affichage</h3><span class="remote-field-caption">Miroirs</span><div class="remote-mirrors"><button id="remote-mirror-x" type="button" aria-pressed="false">↔ Horizontal</button><button id="remote-mirror-y" type="button" aria-pressed="false">↕ Vertical</button></div></section>
+    </div><div class="remote-console-footer"><button id="remote-apply-settings" class="button secondary">Appliquer les réglages</button><span>La vitesse, le texte, le décompte et les miroirs.</span></div></div>`
+   const speed=within<HTMLInputElement>('#remote-speed'),speedRange=within<HTMLInputElement>('#remote-speed-range')
+   const size=within<HTMLInputElement>('#remote-size'),position=within<HTMLSelectElement>('#remote-position')
+   const preview=within<HTMLElement>('#remote-preview'),previewContent=within<HTMLElement>('#remote-preview-content')
+   const countdown=within<HTMLSelectElement>('#remote-countdown'),font=within<HTMLSelectElement>('#remote-font')
+   const mirrorX=within<HTMLButtonElement>('#remote-mirror-x'),mirrorY=within<HTMLButtonElement>('#remote-mirror-y')
+   const proportional=within<HTMLInputElement>('#remote-proportional')
+   countdown.value=String(workspace.settings.countdown);font.value=workspace.settings.font
+   proportional.checked=workspace.settings.proportional
+   mirrorX.setAttribute('aria-pressed',String(workspace.settings.mirrorX))
+   mirrorY.setAttribute('aria-pressed',String(workspace.settings.mirrorY))
+   position.value=readingStart?.scriptId===s.id?readingStart.blockId:''
+   const clamp=(value:number,min:number,max:number,fallback:number)=>Math.round(Math.max(min,Math.min(max,Number.isFinite(value)?value:fallback)))
+   const syncSpeed=()=>{speed.value=String(clamp(Number(speed.value),5,120,35));speedRange.value=speed.value}
+   const syncSize=()=>{size.value=String(clamp(Number(size.value),28,100,54));previewContent.style.fontSize=`${size.value}px`}
+   const syncPreview=()=>{syncSize();previewContent.style.fontFamily=font.value==='Georgia'?'Georgia,serif':font.value==='original'?'inherit':'Arial,Helvetica,sans-serif';previewContent.classList.toggle('remote-proportional',proportional.checked);previewContent.style.transform=`scale(${mirrorX.getAttribute('aria-pressed')==='true'?-1:1},${mirrorY.getAttribute('aria-pressed')==='true'?-1:1})`}
+   const markPosition=()=>{previewContent.querySelectorAll<HTMLElement>('.remote-selected').forEach(node=>node.classList.remove('remote-selected'));if(position.value)Array.from(previewContent.querySelectorAll<HTMLElement>('[data-id]')).find(node=>node.dataset.id===position.value)?.classList.add('remote-selected')}
+   syncSpeed();syncPreview();markPosition()
+   if(position.value)previewContent.querySelector<HTMLElement>(`[data-id="${CSS.escape(position.value)}"]`)?.scrollIntoView({block:'center'})
+   speed.onchange=syncSpeed
+   speedRange.oninput=()=>{speed.value=speedRange.value}
+   speedRange.onchange=()=>void command('speed')
+   within<HTMLButtonElement>('#remote-speed-minus').onclick=()=>{speed.value=String(clamp(Number(speed.value)-1,5,120,35));syncSpeed();void command('speed')}
+   within<HTMLButtonElement>('#remote-speed-plus').onclick=()=>{speed.value=String(clamp(Number(speed.value)+1,5,120,35));syncSpeed();void command('speed')}
+   size.onchange=syncPreview
+   within<HTMLButtonElement>('#remote-size-minus').onclick=()=>{size.value=String(clamp(Number(size.value)-1,28,100,54));syncPreview()}
+   within<HTMLButtonElement>('#remote-size-plus').onclick=()=>{size.value=String(clamp(Number(size.value)+1,28,100,54));syncPreview()}
+   font.onchange=syncPreview;proportional.onchange=syncPreview
+   ;[mirrorX,mirrorY].forEach(button=>button.onclick=()=>{button.setAttribute('aria-pressed',String(button.getAttribute('aria-pressed')!=='true'));syncPreview()})
+   position.onchange=()=>{markPosition();if(position.value)previewContent.querySelector<HTMLElement>(`[data-id="${CSS.escape(position.value)}"]`)?.scrollIntoView({behavior:'smooth',block:'center'});else preview.scrollTo({top:0,behavior:'smooth'})}
+   preview.onclick=event=>{const block=(event.target as HTMLElement).closest<HTMLElement>('[data-id]');if(block?.dataset.id){position.value=block.dataset.id;markPosition()}}
+   if(link)within<HTMLButtonElement>('#copy-link').onclick=()=>{const input=within<HTMLInputElement>('#session-link');input.select();void navigator.clipboard.writeText(link).then(()=>feedback.textContent='Lien copié.').catch(()=>feedback.textContent='Sélectionne et copie le lien affiché.')}
+   const command=async(action:string)=>{
+    if(busy)return
+    busy=true
+    try{
+     syncSpeed();syncPreview()
+     const settings={speed:Number(speed.value),countdown:Number(countdown.value),size:Number(size.value),font:font.value,mirrorX:mirrorX.getAttribute('aria-pressed')==='true',mirrorY:mirrorY.getAttribute('aria-pressed')==='true',proportional:proportional.checked}
+     const {data:result,error:sendError}=await cloud!.rpc('send_reading_command',{session_id:sessionId,expected_sequence:sequence,command:{action,blockId:position.value,speed:settings.speed,countdown:settings.countdown,settings}})
+     if(sendError)throw sendError
+     if(result.conflict)throw new Error('La session a changé. Réessaie après sa mise à jour.')
+     sequence=result.sequence
+     feedback.textContent='Commande envoyée · confirmation en attente.'
+    }catch(e){feedback.textContent=message(e)}finally{busy=false}
+   }
+   within<HTMLButtonElement>('#remote-pause').onclick=()=>void command('pause')
+   within<HTMLButtonElement>('#remote-seek').onclick=()=>void command('seek')
+   within<HTMLButtonElement>('#remote-play').onclick=()=>void command('play')
+   within<HTMLButtonElement>('#remote-apply-settings').onclick=()=>void command('settings')
+   within<HTMLButtonElement>('#revoke-session').onclick=async()=>{const {error:revokeError}=await cloud!.rpc('revoke_reading_session',{session_id:sessionId});if(revokeError){feedback.textContent=revokeError.message;return}d.close();toast('Session terminée.')}
+   remotePoll=window.setInterval(async()=>{
+    if(document.hidden||!d.open)return
+    const {data:state,error:pollError}=await cloud!.from('reading_sessions').select('sequence,ack_sequence,last_seen,reader_state,revoked').eq('id',sessionId).single()
+    if(!d.open)return
+    const status=within<HTMLElement>('#remote-status')
+    if(pollError){status.textContent='Connexion interrompue';return}
+    sequence=state.sequence
+    const connected=state.last_seen&&Date.now()-new Date(state.last_seen).getTime()<15000
+    status.textContent=state.revoked?'Session terminée':!connected?'Lecteur déconnecté ou en attente':state.ack_sequence===state.sequence?`Connecté · ${state.reader_state==='playing'?'lecture':state.reader_state==='countdown'?'décompte':'en pause'}`:'Connecté · commande en attente'
+    status.classList.toggle('connected',!!connected&&!state.revoked)
+    if(connected)within<HTMLDetailsElement>('#remote-link-details').open=false
+   },5000)
+  }catch(e){feedback.textContent=message(e);createButton.disabled=false}
+ }
 }
-
-
-
-
