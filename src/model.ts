@@ -29,3 +29,29 @@ export function snapshot(script: Script) {
  script.versions = script.versions.slice(-30)
 }
 export function copyProjects(projects: Project[]) { return projects.map(p => ({...p,id:uid(),scripts:p.scripts.map(s => ({...s,id:uid(),content:blockIds(s.content,true),versions:[]}))})) }
+
+// Keep the cloud version intact and expose differing local drafts as separate projects.
+// Unlike an imported project, a recovered draft must retain its edit history.
+export function recoverConflict(local: Workspace, remote: Workspace) {
+ const merged = cloneJson(remote)
+ const remoteById = new Map(remote.projects.map(project => [project.id, project]))
+ let recovered = 0
+ for (const source of local.projects) {
+  if (JSON.stringify(source) === JSON.stringify(remoteById.get(source.id))) continue
+  const copy = cloneJson(source)
+  copy.id = uid()
+  copy.name = source.name.replace(/(?: — (?:copie récupérée|version locale récupérée|brouillon récupéré))+$/, '') + ' — brouillon récupéré'
+  delete copy.deletedAt
+  copy.scripts = copy.scripts.map(script => {
+   script.id = uid()
+   delete script.deletedAt
+   script.content = blockIds(script.content, true)
+   script.versions = script.versions.map(version => ({ ...version, id: uid(), content: blockIds(version.content, true) }))
+   return script
+  })
+  merged.projects.push(copy)
+  recovered++
+ }
+ merged.settings = cloneJson(local.settings)
+ return { workspace: merged, recovered }
+}

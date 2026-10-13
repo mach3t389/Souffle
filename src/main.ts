@@ -4,7 +4,7 @@ import { TextStyleKit } from '@tiptap/extension-text-style'
 import TextAlign from '@tiptap/extension-text-align'
 import UniqueID from '@tiptap/extension-unique-id'
 import type { User } from '@supabase/supabase-js'
-import { blockIds, cloneJson, copyProjects, defaults, snapshot, uid, validateWorkspace, type Project, type Script, type Workspace } from './model'
+import { blockIds, cloneJson, copyProjects, defaults, recoverConflict, snapshot, uid, validateWorkspace, type Project, type Script, type Workspace } from './model'
 import { cloud, cloudKey, cloudUrl, fetchWorkspace, saveWorkspace } from './cloud'
 import './style.css'
 import './theme.css'
@@ -80,9 +80,21 @@ async function synchronize(){
  finally{syncing=false;status()}
 }
 function message(e:unknown){return e instanceof Error?e.message:typeof (e as any)?.message==='string'?(e as any).message:'Une erreur est survenue. Réessaie.'}
-function renderConflict(){editor?.setEditable(!conflict && !changingAccount);const b=document.querySelector('#conflict-banner');if(b){b.innerHTML=conflict?'<strong>Une autre version a été enregistrée.</strong><span>Ton brouillon reste disponible.</span><button id="keep-both" class="button secondary">Conserver les deux</button><button id="export-conflict" class="button secondary">Exporter mon brouillon</button>':'';const both=document.querySelector<HTMLButtonElement>('#keep-both');if(both)both.onclick=resolveConflict;const exportButton=document.querySelector<HTMLButtonElement>('#export-conflict');if(exportButton)exportButton.onclick=exportWorkspace}status()}
+function renderConflict(){editor?.setEditable(!conflict && !changingAccount);const b=document.querySelector('#conflict-banner');if(b){b.innerHTML=conflict?'<strong>Une autre version a été enregistrée.</strong><span>Ton brouillon reste sur cet appareil. « Conserver les deux » le rendra visible dans un projet séparé et tentera de le synchroniser.</span><button id="keep-both" class="button secondary">Conserver les deux</button><button id="export-conflict" class="button secondary">Exporter mon brouillon</button>':'';const both=document.querySelector<HTMLButtonElement>('#keep-both');if(both)both.onclick=resolveConflict;const exportButton=document.querySelector<HTMLButtonElement>('#export-conflict');if(exportButton)exportButton.onclick=exportWorkspace}status()}
 async function resolveConflict(){
- try{const local=copyProjects(workspace.projects);const remote=remoteConflict||(user?await fetchWorkspace(user.id):null);const latest=remote?.data||(JSON.parse(localStorage.getItem(scope)||'null') as Envelope)?.workspace;if(!validateWorkspace(latest))throw new Error('Version distante indisponible. Exporte ton brouillon.');workspace=cloneJson(latest);local.forEach(p=>p.name+=' — copie récupérée');workspace.projects.push(...local);baseRevision=remote?.revision||baseRevision;conflict=false;remoteConflict=null;lastStored=localStorage.getItem(scope);store();render();toast('Les deux versions sont conservées dans des projets séparés.')}catch(e){toast(message(e))}
+ try{
+  if(!user)throw new Error('Connecte-toi pour résoudre le conflit.')
+  const remote=await fetchWorkspace(user.id)
+  if(!remote||!validateWorkspace(remote.data))throw new Error('Version distante indisponible. Exporte ton brouillon.')
+  if(localStorage.getItem(scope)!==lastStored)throw new Error('Ce brouillon a changé dans un autre onglet. Exporte-le avant de continuer.')
+  const merged=recoverConflict(workspace,remote.data)
+  const previous={workspace,baseRevision,conflict,remoteConflict}
+  workspace=merged.workspace;baseRevision=remote.revision;conflict=false;remoteConflict=null
+  if(!store()){workspace=previous.workspace;baseRevision=previous.baseRevision;conflict=previous.conflict;remoteConflict=previous.remoteConflict;renderConflict();return}
+  render()
+  await synchronize()
+  if(!conflict)toast(dirty?'Brouillon conservé sur cet appareil. Réessaie Synchroniser pour le voir ailleurs.':merged.recovered?'Brouillon récupéré et synchronisé dans un projet séparé.':'Version cloud synchronisée.')
+ }catch(e){toast(message(e))}
 }
 const theme=()=>document.documentElement.dataset.theme==='dark'
 function themeIcon(){return theme()

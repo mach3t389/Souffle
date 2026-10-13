@@ -49,13 +49,25 @@
  function restyle() { pause();var point=settings.mirrorY?null:anchor();style();if(point){var after=point.node.getBoundingClientRect().top-el('viewport').getBoundingClientRect().top;el('viewport').scrollTop+=after-point.offset;}save(); }
  function speedUI() { el('speed').value=settings.speed;el('speed-number').value=settings.speed;el('speed-minus').disabled=settings.speed<=5;el('speed-plus').disabled=settings.speed>=120; }
  function setSpeed(value) { settings.speed=Math.round(clamp(value,5,120,settings.speed));speedUI();save(); }
- function sizeUI() { el('size-number').value=settings.size;el('size-minus').disabled=settings.size<=28;el('size-plus').disabled=settings.size>=100; }
+ function sizeUI() { el('size').value=settings.size;el('size-number').value=settings.size;el('size-minus').disabled=settings.size<=28;el('size-plus').disabled=settings.size>=100; }
  function setSize(value) { settings.size=Math.round(clamp(value,28,100,settings.size));sizeUI();restyle(); }
  function commitSize() { setSize(this.value.trim()===''?settings.size:this.value); }
  function commitSpeed() { setSpeed(this.value.trim()===''?settings.speed:this.value); }
+ function stepButton(id, action) {
+  var button=el(id), startX=0, startY=0, lastTouch=0;
+  button.onclick=function(){if(Date.now()-lastTouch>700&&!button.disabled)action();};
+  button.addEventListener('touchstart',function(event){if(event.touches.length===1){startX=event.touches[0].clientX;startY=event.touches[0].clientY;}},false);
+  button.addEventListener('touchend',function(event){
+   if(event.changedTouches.length!==1)return;
+   var touch=event.changedTouches[0];
+   var tapped=Math.abs(touch.clientX-startX)<12&&Math.abs(touch.clientY-startY)<12;
+   event.preventDefault();lastTouch=Date.now();
+   if(tapped&&!button.disabled)action();
+  },false);
+ }
  speedUI();sizeUI();el('delay').value=settings.countdown;el('font').value=settings.font;el('proportional').checked=settings.proportional;
- el('speed-minus').onclick=function(){setSpeed(settings.speed-1);};el('speed-plus').onclick=function(){setSpeed(settings.speed+1);};el('speed-number').onchange=commitSpeed;el('speed-number').onblur=commitSpeed;el('speed-number').onkeydown=function(e){if(e.key==='Enter'){commitSpeed.call(this);this.blur();}};
- el('test-speed').onclick=testSpeed;el('reader-exit').onclick=function(){pause();};el('play').onclick=function(){play();};el('immersive-play').onclick=function(){play();};el('show-settings').onclick=showSettings;el('hide-settings').onclick=function(){if(testingSpeed)pause();setImmersive(true);};el('size-minus').onclick=function(){setSize(settings.size-1);};el('size-plus').onclick=function(){setSize(settings.size+1);};el('size-number').onchange=commitSize;el('size-number').onblur=commitSize;el('size-number').onkeydown=function(e){if(e.key==='Enter'){commitSize.call(this);this.blur();}};el('restart').onclick=function(){pause();motion.jump(0);};el('speed').oninput=function(){setSpeed(this.value);};el('delay').onchange=function(){pause();settings.countdown=Number(this.value);save();};el('font').onchange=function(){settings.font=this.value;restyle();};el('proportional').onchange=function(){settings.proportional=this.checked;restyle();};el('mirror-x').onclick=function(){settings.mirrorX=!settings.mirrorX;style();save();};el('mirror-y').onclick=function(){settings.mirrorY=!settings.mirrorY;style();save();};
+ stepButton('speed-minus',function(){setSpeed(settings.speed-1);});stepButton('speed-plus',function(){setSpeed(settings.speed+1);});el('speed-number').onchange=commitSpeed;el('speed-number').onblur=commitSpeed;el('speed-number').onkeydown=function(e){if(e.key==='Enter'){commitSpeed.call(this);this.blur();}};
+ el('test-speed').onclick=testSpeed;el('reader-exit').onclick=function(){pause();};el('play').onclick=function(){play();};el('immersive-play').onclick=function(){play();};el('show-settings').onclick=showSettings;el('hide-settings').onclick=function(){if(testingSpeed)pause();setImmersive(true);};stepButton('size-minus',function(){setSize(settings.size-1);});stepButton('size-plus',function(){setSize(settings.size+1);});el('size').oninput=function(){setSize(this.value);};el('size-number').onchange=commitSize;el('size-number').onblur=commitSize;el('size-number').onkeydown=function(e){if(e.key==='Enter'){commitSize.call(this);this.blur();}};el('restart').onclick=function(){pause();motion.jump(0);};el('speed').oninput=function(){setSpeed(this.value);};el('delay').onchange=function(){pause();settings.countdown=Number(this.value);save();};el('font').onchange=function(){settings.font=this.value;restyle();};el('proportional').onchange=function(){settings.proportional=this.checked;restyle();};el('mirror-x').onclick=function(){settings.mirrorX=!settings.mirrorX;style();save();};el('mirror-y').onclick=function(){settings.mirrorY=!settings.mirrorY;style();save();};
  SouffleReaderGestures(el('viewport'),{isActive:function(){return playing||remaining>0;},pause:pause,play:play,hasSelection:function(){var selection=window.getSelection();return !!selection&&!selection.isCollapsed;}});document.addEventListener('visibilitychange',function(){if(document.hidden){pause();needsReconnect=true;}});document.addEventListener('keydown',function(e){if(/INPUT|SELECT/.test(e.target.tagName))return;if((e.code==='Space'||e.key===' ')&&!/BUTTON|A/.test(e.target.tagName)){e.preventDefault();if(testingSpeed)pause();else play();}if(e.key==='Escape'){if(immersive)showSettings();else window.location.href='/';}});style();
  // Lien d'association dans le fragment : le jeton n'est pas envoyé à l'hébergeur.
  var remote=null,sequence=-1,loaded=false,needsReconnect=false;
