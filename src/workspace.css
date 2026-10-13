@@ -495,3 +495,8 @@ dialog button:disabled,.auth-card button:disabled{opacity:.5;cursor:default}
  .workbench,.workspace-main{min-width:0;max-width:100%}
  .workbench .topbar{max-width:100%;min-width:0}
 }
+
+/* Essai de vitesse disponible depuis la télécommande, sans décompte sur l’iPad. */
+.remote-stage #remote-test-speed{width:100%;min-height:42px;margin-top:9px;border:1px solid #50674f;background:#26372b;color:#e7f0e3;font-weight:600}
+.remote-stage #remote-test-speed[aria-pressed=true]{background:#b8d29d;border-color:#b8d29d;color:#1b2c1c}
+@media(max-width:600px){.remote-stage #remote-test-speed{min-height:48px}}

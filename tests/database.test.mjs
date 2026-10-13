@@ -52,6 +52,21 @@ test('reading sessions: private snapshot, commands, acknowledgments, revocation'
  })
  await as('anon',null,async()=>{await assert.rejects(db.query('select public.poll_reading_session($1,1,$2,true)',[session.token,'paused']),/Session expired/)})
 })
+test('a remote speed trial uses the existing play command without a schema change',async()=>{
+ let session
+ await as('authenticated',alice,async()=>{
+  session=(await db.query('select public.create_reading_session($1) as result',[JSON.stringify({html:'<p>Essai</p>',title:'Essai',settings:{speed:35}})])).rows[0].result
+  const command={action:'play',testSpeed:true,blockId:'',speed:12,countdown:3}
+  const sent=(await db.query('select public.send_reading_command($1,0,$2) as result',[session.id,JSON.stringify(command)])).rows[0].result
+  assert.equal(sent.sequence,1)
+ })
+ await as('anon',null,async()=>{
+  const polled=(await db.query('select public.poll_reading_session($1,-1,$2,true) as result',[session.token,'paused'])).rows[0].result
+  assert.equal(polled.command.action,'play')
+  assert.equal(polled.command.testSpeed,true)
+  assert.equal(polled.command.speed,12)
+ })
+})
 test('remote settings persist across reconnect and expired links are rejected',async()=>{
  let session
  await as('authenticated',alice,async()=>{
