@@ -14,6 +14,9 @@ header { display:flex; align-items:center; justify-content:space-between; paddin
 header a { flex-shrink:0; color:#dce5d6; text-decoration:none; background:#202c23; padding:12px 17px; border-radius:7px; }
 header #title { margin:0 14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .badge { flex-shrink:0; color:#81917d; font-size:9px; letter-spacing:1px; }
+.reader-header-actions { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+#refresh-reader { min-height:40px; padding:7px 12px; }
+@media(max-width:620px) { .reader-header-actions { gap:7px; } #refresh-reader { padding:7px 9px; } #refresh-reader span, .reader-header-actions .badge { display:none; } }
 #viewport { overflow-y:auto; flex:1; min-height:0; position:relative; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 #viewport::-webkit-scrollbar { display:none; }
 #text-track { overflow:hidden; }
