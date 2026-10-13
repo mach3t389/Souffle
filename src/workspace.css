@@ -7,7 +7,11 @@
 .side-brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:35px}
 .side-bottom{margin-top:auto;padding-top:18px;border-top:1px solid var(--line)}
 .side-bottom small{font-size:10px;color:var(--muted);display:block;margin-top:15px;overflow-wrap:anywhere}
-.backup-actions{display:flex;gap:25px;padding:14px 10px}
+.backup-actions{display:flex;flex-wrap:wrap;gap:8px;padding:14px 8px}
+.backup-actions .text-button{min-height:38px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;text-align:left}
+.backup-actions .text-button:hover{background:#88888818}
+dialog:not([open]){display:none}
+
 .workbench .sidebar .section-row{margin:24px 10px 10px}
 .workbench .nav-item{font-size:12px}
 .workbench .topbar{padding:14px 24px;min-height:70px;height:auto;gap:16px;flex-wrap:wrap}
@@ -323,3 +327,13 @@ dialog button:disabled,.auth-card button:disabled{opacity:.5;cursor:default}
 .remote-stage select,.remote-stage input:not([type=range]):not([type=checkbox]){background:#101713;color:#e9eee4;border-color:#46574a}
 @media(max-width:850px){.remote-stage .remote-control-grid{grid-template-columns:1fr 1fr}.remote-stage .remote-control-section:nth-child(2){border-right:0}.remote-stage .remote-control-section:last-child{grid-column:1 / -1;display:flex;align-items:center;gap:12px;border-top:1px solid #3a473d;padding-top:10px}.remote-stage .remote-control-section:last-child h3{margin:0}.remote-stage .remote-mirrors{display:flex;margin:0}.remote-stage .remote-console{max-height:55vh}}
 @media(max-width:600px){.remote-stage .dialog-header{min-height:54px}.remote-stage .remote-stage-top{padding-block:9px}.remote-stage .remote-kicker,.remote-stage .remote-preview-head span,.remote-stage .remote-console-head span,.remote-stage .remote-console-footer span{display:none}.remote-stage .remote-status{white-space:normal;text-align:right}.remote-stage .remote-preview-head{gap:8px}.remote-stage .remote-preview-head select{width:150px}.remote-stage .remote-preview{padding:22px 24px 0}.remote-stage .remote-preview article{font-size:40px}.remote-stage .remote-console{max-height:42vh}.remote-stage .remote-control-grid{display:block}.remote-stage .remote-control-section{border:0;border-bottom:1px solid #3a473d;padding:0 0 14px;margin-bottom:14px}.remote-stage .remote-control-section:last-child{display:block;border:0;padding:0;margin:0}.remote-stage .remote-control-section:last-child h3{margin-bottom:10px}.remote-stage .remote-mirrors{display:grid;grid-template-columns:1fr 1fr}.remote-stage .remote-transport .button{font-size:12px;padding-inline:6px}.remote-stage .remote-link-row{flex-wrap:wrap}.remote-stage .remote-link-row input{flex-basis:100%}}
+
+.script-bar .remote-entry{background:#d7ead8;color:#24513a;border:1px solid #a6c9ab;font-weight:700}
+[data-theme=dark] .script-bar .remote-entry{background:#385741;color:#d7f3db;border-color:#699476}
+.remote-stage .remote-connection{flex-wrap:wrap;align-items:center;padding-top:12px;padding-bottom:12px}
+.remote-stage .remote-pair-code{display:flex;flex-direction:column;gap:3px;min-width:190px}
+.remote-stage .remote-pair-code span,.remote-stage .remote-pair-code small{font-size:12px;color:#b9cdb8}
+.remote-stage .remote-pair-code strong{font-size:28px;letter-spacing:.22em;font-variant-numeric:tabular-nums;color:#d5efca}
+.remote-stage .remote-script-choice{display:flex;flex-direction:column;gap:5px;min-width:180px;flex:1;margin:0;font-size:12px}
+.remote-stage .remote-script-choice select{width:100%;max-width:420px;margin:0}
+#pair-code{font-size:24px;letter-spacing:.25em;font-variant-numeric:tabular-nums;text-align:center}

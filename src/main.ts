@@ -1,4 +1,4 @@
-import { Editor, generateJSON, type JSONContent } from '@tiptap/core'
+import { Editor, generateHTML, generateJSON, type JSONContent } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import TextAlign from '@tiptap/extension-text-align'
@@ -103,18 +103,20 @@ function themeIcon(){return theme()
 function render(){
  editor?.destroy();editor=undefined;window.clearInterval(remotePoll)
  const p=activeProject(),s=activeScript();if(p)workspace.selectedProject=p.id;if(s)workspace.selectedScript=s.id;if(readingStart?.scriptId!==s?.id)readingStart=null
- app.innerHTML=`<div class="workbench ${collapsed?'sidebar-collapsed':''} ${scriptsHidden?'scripts-hidden':''}"><aside class="sidebar"><div class="side-brand"><a href="#" class="brand" aria-label="Mes projets">souffle<span class="brand-dot">.</span></a><button id="close-menu" class="icon-button" aria-label="Replier le menu">‹</button></div><button id="library" class="nav-item ${page==='library'?'active':''}">▦ <span>Mes projets</span></button><div class="section-row"><span>PROJETS</span><button id="new-project" class="icon-button" aria-label="Créer un projet">＋</button></div><div class="project-list">${workspace.projects.filter(p=>!p.deletedAt).map(item=>`<button data-project="${esc(item.id)}" class="nav-item ${p?.id===item.id&&page==='workspace'?'active':''}">▱ <span>${esc(item.name)}</span></button>`).join('')||'<p class="small muted">Aucun projet</p>'}</div><div class="side-bottom"><button id="trash" class="nav-item">♲ Corbeille</button><button id="account" class="nav-item">◎ ${user?'Mon compte':'Se connecter'}</button><div class="backup-actions"><button id="export" class="text-button">Exporter</button><button id="restore" class="text-button">Restaurer</button></div><small>${user?esc(user.email||'Compte connecté'):'Stockage sur cet appareil'}</small></div></aside><button class="menu-scrim" id="menu-scrim" aria-label="Fermer le menu"></button><main class="workspace-main"><header class="topbar"><div class="header-start"><button id="toggle-menu" class="square-button" aria-label="${collapsed?'Ouvrir':'Replier'} le menu" aria-expanded="${!collapsed}">☰</button>${p&&page==='workspace'?`<button id="rename-project" class="project-name" aria-label="Renommer le projet ${esc(p.name)}" title="Renommer le projet">${esc(p.name)}</button>`:`<div class="breadcrumb">${page==='trash'?'Corbeille':'Mes projets'}</div>`}</div><div class="top-actions"><button id="save-state" type="button"></button><button id="theme-toggle" class="theme-toggle" aria-label="Activer le thème ${theme()?'clair':'sombre'}" title="Activer le thème ${theme()?'clair':'sombre'}">${themeIcon()}</button><button id="account-top" class="button secondary" aria-label="${user?'Mon compte':'Connexion'}" title="${user?'Mon compte':'Connexion'}"><svg class="account-symbol" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span class="account-label">${user?'Compte':'Connexion'}</span></button></div></header><div id="conflict-banner" class="conflict-banner" role="alert"></div>${page==='library'?libraryHTML():page==='trash'?trashHTML():workspaceHTML(p,s)}</main></div><div id="toast" role="status"></div><input id="file-input" type="file" accept=".docx,.txt" hidden><input id="backup-input" type="file" accept=".json" hidden><dialog id="dialog"></dialog>`
+ app.innerHTML=`<div class="workbench ${collapsed?'sidebar-collapsed':''} ${scriptsHidden?'scripts-hidden':''}"><aside class="sidebar"><div class="side-brand"><a href="#" class="brand" aria-label="Mes projets">souffle<span class="brand-dot">.</span></a><button id="close-menu" class="icon-button" aria-label="Replier le menu">‹</button></div><button id="library" class="nav-item ${page==='library'?'active':''}">▦ <span>Mes projets</span></button><div class="section-row"><span>PROJETS</span><button id="new-project" class="icon-button" aria-label="Créer un projet">＋</button></div><div class="project-list">${workspace.projects.filter(p=>!p.deletedAt).map(item=>`<button data-project="${esc(item.id)}" class="nav-item ${p?.id===item.id&&page==='workspace'?'active':''}">▱ <span>${esc(item.name)}</span></button>`).join('')||'<p class="small muted">Aucun projet</p>'}</div><div class="side-bottom"><button id="trash" class="nav-item">♲ Corbeille</button><button id="account" class="nav-item">◎ ${user?'Mon compte':'Se connecter'}</button><div class="backup-actions"><button id="export" class="text-button" title="Télécharger tous les projets en fichier JSON">Télécharger une sauvegarde</button><button id="restore" class="text-button" title="Ajouter les projets d’une sauvegarde JSON">Importer une sauvegarde</button></div><small>${user?esc(user.email||'Compte connecté'):'Stockage sur cet appareil'}</small></div></aside><button class="menu-scrim" id="menu-scrim" aria-label="Fermer le menu"></button><main class="workspace-main"><header class="topbar"><div class="header-start"><button id="toggle-menu" class="square-button" aria-label="${collapsed?'Ouvrir':'Replier'} le menu" aria-expanded="${!collapsed}">☰</button>${p&&page==='workspace'?`<button id="rename-project" class="project-name" aria-label="Renommer le projet ${esc(p.name)}" title="Renommer le projet">${esc(p.name)}</button>`:`<div class="breadcrumb">${page==='trash'?'Corbeille':'Mes projets'}</div>`}</div><div class="top-actions">${user?'<button id="join-reader" class="button secondary" aria-haspopup="dialog">Rejoindre une lecture</button>':''}<button id="save-state" type="button"></button><button id="theme-toggle" class="theme-toggle" aria-label="Activer le thème ${theme()?'clair':'sombre'}" title="Activer le thème ${theme()?'clair':'sombre'}">${themeIcon()}</button><button id="account-top" class="button secondary" aria-label="${user?'Mon compte':'Connexion'}" title="${user?'Mon compte':'Connexion'}"><svg class="account-symbol" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span class="account-label">${user?'Compte':'Connexion'}</span></button></div></header><div id="conflict-banner" class="conflict-banner" role="alert"></div>${page==='library'?libraryHTML():page==='trash'?trashHTML():workspaceHTML(p,s)}</main></div><div id="toast" role="status"></div><input id="file-input" type="file" accept=".docx,.txt" hidden><input id="backup-input" type="file" accept=".json" hidden><dialog id="dialog"></dialog>`
  $('#toggle-menu').onclick=()=>toggleMenu();$('#close-menu').onclick=()=>toggleMenu();$('#menu-scrim').onclick=()=>toggleMenu(true)
  $('#library').onclick=()=>{flush();page='library';if(innerWidth<=850)collapsed=true;render()};$('.brand').onclick=e=>{e.preventDefault();flush();page='library';if(innerWidth<=850)collapsed=true;render()}
  $('#new-project').onclick=()=>createProject();$('#trash').onclick=()=>{flush();page='trash';if(innerWidth<=850)collapsed=true;render()}
  $('#export').onclick=exportWorkspace;$('#restore').onclick=()=>$('#backup-input').click();$('#backup-input').onchange=restore;$('#file-input').onchange=importFile
  $('#account').onclick=showAccount;$('#account-top').onclick=showAccount
+ const joinButton=document.querySelector<HTMLButtonElement>('#join-reader');if(joinButton)joinButton.onclick=joinProjectReader
  $('#save-state').onclick=()=>{flush();void synchronize()}
  $('#theme-toggle').onclick=()=>{document.documentElement.dataset.theme=theme()?'light':'dark';try{localStorage.setItem('souffle.theme',document.documentElement.dataset.theme!)}catch{}flush();render()}
  document.querySelectorAll<HTMLButtonElement>('[data-project]').forEach(b=>b.onclick=()=>{flush();const target=workspace.projects.find(p=>p.id===b.dataset.project)!;if(innerWidth<=850)collapsed=true;select(target)})
  if(p&&page==='workspace'){
   $('#rename-project').onclick=()=>renameProject(p)
   $('#new-script').onclick=()=>createScriptDialog(p)
+  const remoteButton=document.querySelector<HTMLButtonElement>('#project-remote');if(remoteButton&&s)remoteButton.onclick=()=>void remoteDialog(s)
   bindScriptPicker()
   const menu=document.querySelector<HTMLButtonElement>('#script-menu');if(menu&&s)menu.onclick=()=>{capture();scriptMenu(s)}
   const plan=document.querySelector<HTMLButtonElement>('#toggle-outline');if(plan)plan.onclick=()=>{if(innerWidth<=850){chaptersDialog();return}flush();scriptsHidden=!scriptsHidden;render()}
@@ -143,7 +145,7 @@ function libraryHTML(){return `<section class="library-view"><div class="list-he
 function workspaceHTML(p:Project|undefined,s:Script|undefined){
  if(!p)return `<section class="empty-state"><h1>Mes projets</h1><p>Crée un projet pour commencer.</p><button id="create-project" class="button primary">＋ Nouveau projet</button></section>`
  const scripts=p.scripts.filter(s=>!s.deletedAt)
- return `<div class="script-bar" aria-label="Navigation et actions du script"><div class="script-selection">${scriptPickerHTML(scripts,s)}</div><button id="new-script" class="button secondary" aria-haspopup="dialog" aria-label="Nouveau script" title="Nouveau script"><span aria-hidden="true">＋</span><span class="new-script-label">Nouveau script</span><span class="new-script-label-short" aria-hidden="true">Nouveau</span></button>${s?'<button id="script-menu" class="square-button" aria-label="Actions du script sélectionné" title="Actions du script" aria-haspopup="dialog">⋯</button><div class="reading-actions"><button id="toggle-outline" class="square-button" aria-label="Plan du script" title="Plan du script" aria-expanded="'+!scriptsHidden+'"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><button id="start" class="button primary">▷ Lecture</button></div>':''}</div>
+ return `<div class="script-bar" aria-label="Navigation et actions du script"><div class="script-selection">${scriptPickerHTML(scripts,s)}</div>${s?'<button id="project-remote" class="button remote-entry" aria-haspopup="dialog">Télécommande</button>':''}<button id="new-script" class="button secondary" aria-haspopup="dialog" aria-label="Nouveau script" title="Nouveau script"><span aria-hidden="true">＋</span><span class="new-script-label">Nouveau script</span><span class="new-script-label-short" aria-hidden="true">Nouveau</span></button>${s?'<button id="script-menu" class="square-button" aria-label="Actions du script sélectionné" title="Actions du script" aria-haspopup="dialog">⋯</button><div class="reading-actions"><button id="toggle-outline" class="square-button" aria-label="Plan du script" title="Plan du script" aria-expanded="'+!scriptsHidden+'"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button><button id="start" class="button primary">▷ Lecture</button></div>':''}</div>
  <div class="editor-layout"><aside class="scripts-panel" aria-label="Plan du script"><div class="list-heading"><h2>Plan du script</h2><button id="close-outline" class="square-button" aria-label="Fermer le plan">×</button></div><div id="script-outline"></div></aside>${s?`<section class="document-panel" aria-label="Script : ${esc(s.title)}"><div id="reading-start" class="reading-start" hidden></div>${toolbarHTML()}<div id="editor"></div><footer class="document-footer"><span id="word-count"></span><span id="duration"></span></footer></section>`:'<section class="empty-state"><h2>Aucun script sélectionné</h2><p>Utilise Nouveau script pour écrire ou importer un document.</p></section>'}</div>`
 
 }
@@ -214,7 +216,7 @@ function showAccount(){
   dialog('Changer mon mot de passe',`<form id="password-form"><p>Choisis un mot de passe unique d’au moins 12 caractères.</p><label>Nouveau mot de passe<input id="new-password" type="password" autocomplete="new-password" minlength="12" required></label><label>Confirmer le mot de passe<input id="confirm-password" type="password" autocomplete="new-password" minlength="12" required></label><p id="password-message" role="status"></p><button class="button primary" type="submit">Enregistrer</button></form>`)
   $('#password-form').onsubmit=async event=>{event.preventDefault();const password=$<HTMLInputElement>('#new-password').value,confirmation=$<HTMLInputElement>('#confirm-password').value,feedback=$('#password-message'),button=$<HTMLButtonElement>('#password-form button');if(password!==confirmation){feedback.textContent='Les mots de passe ne correspondent pas.';return}button.disabled=true;try{const {error}=await cloud!.auth.updateUser({password});if(error)throw error;feedback.textContent='Mot de passe enregistré.';$<HTMLFormElement>('#password-form').reset()}catch(error){feedback.textContent=message(error)}finally{button.disabled=false}}
  }
- $('#logout').onclick=async()=>{flush();const {error}=await cloud!.auth.signOut();if(error){$('#account-message').textContent=error.message;return}await switchAccount(null)}
+ $('#logout').onclick=async()=>{flush();const {error}=await cloud!.auth.signOut();if(error){$('#account-message').textContent=error.message;return}try{localStorage.removeItem('souffle.remote.reader.v1')}catch{}await switchAccount(null)}
 }
 async function switchAccount(next:User|null){
  if(user?.id===next?.id)return
@@ -234,55 +236,70 @@ if(!authRequired)store(false)
 route()
 if(cloud){void cloud.auth.getSession().then(({data})=>{authLoaded=true;void switchAccount(data.session?.user||null);if(!data.session?.user)route()}).catch(()=>{authLoaded=true;route()});cloud.auth.onAuthStateChange((event,session)=>{window.setTimeout(()=>{if(event==='SIGNED_IN'||event==='SIGNED_OUT'){authLoaded=true;void switchAccount(session?.user||null)}},0)})}
 
+function joinProjectReader(){
+ if(!cloud||!user){toast('Connecte-toi avant de rejoindre une lecture.');return}
+ const d=dialog('Rejoindre une lecture',`<p>Sur l’appareil qui contrôle la lecture, ouvre un projet et choisis « Télécommande ». Saisis ici son code à six chiffres.</p><form id="pair-form"><label for="pair-code">Code du projet<input id="pair-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required placeholder="000000"></label><div class="dialog-actions"><button class="button primary">Ouvrir le lecteur</button></div></form><p id="pair-error" class="form-error" role="alert"></p>`)
+ const input=d.querySelector<HTMLInputElement>('#pair-code')!,button=d.querySelector<HTMLButtonElement>('#pair-form button')!,error=d.querySelector<HTMLElement>('#pair-error')!
+ d.querySelector<HTMLFormElement>('#pair-form')!.onsubmit=async event=>{
+  event.preventDefault();const code=input.value.trim();if(!/^[0-9]{6}$/.test(code)){error.textContent='Saisis les six chiffres du code.';return}
+  button.disabled=true;error.textContent=''
+  try{
+   const {data,error:joinError}=await cloud!.rpc('join_project_reading_session',{p_pair_code:code})
+   if(joinError)throw joinError
+   if(data?.error==='limited')throw new Error('Trop d’essais. Réessaie dans dix minutes.')
+   if(data?.error||!/^[a-f0-9]{64}$/.test(data?.token||''))throw new Error('Code invalide ou session terminée.')
+   localStorage.setItem('souffle.remote.reader.v1',JSON.stringify({server:cloudUrl,key:cloudKey,token:data.token}))
+   d.close();window.location.assign('/lecteur.html#paired')
+  }catch(e){error.textContent=message(e);button.disabled=false}
+ }
+ input.focus()
+}
 async function remoteDialog(s:Script){
  if(!cloud||!user){dialog('Télécommande','<p>Connecte ton compte Supabase pour associer un appareil à une session.</p><a class="button primary" href="#connexion">Se connecter</a>');return}
+ const project=activeProject()!
  capture();snapshot(s);store()
  const html=editor!.getHTML()
  const blocks=Array.from(editor!.view.dom.querySelectorAll<HTMLElement>('p,h1,h2,h3')).filter(node=>node.dataset.id)
- const d=dialog('Télécommande',`<div class="remote-intro" id="remote-intro"><p>Contrôle la lecture sur un autre appareil. Le lien est valable deux heures et utilise une copie du script.</p>${['localhost','127.0.0.1'].includes(location.hostname)?'<p class="form-error">Ouvre Souffle par son adresse web publique pour associer un autre appareil.</p>':''}<button id="create-session" class="button primary">Créer une session</button><div id="session-list"></div></div><div id="remote-content" hidden></div><p id="remote-message" role="status" aria-live="polite"></p>`)
+ const d=dialog('Télécommande',`<div class="remote-intro" id="remote-intro"><p>Préparation du code pour le projet <strong>${esc(project.name)}</strong>…</p><button id="create-session" class="button primary" hidden>Réessayer</button></div><div id="remote-content" hidden></div><p id="remote-message" role="status" aria-live="polite"></p>`)
  d.classList.add('remote-stage')
  const within=<T extends HTMLElement>(selector:string)=>d.querySelector<T>(selector)!
  const feedback=within<HTMLElement>('#remote-message')
- const sessions=await cloud.from('reading_sessions').select('id,expires_at,last_seen,sequence').eq('revoked',false).gt('expires_at',new Date().toISOString())
  if(!d.open)return
- if(sessions.error)feedback.textContent='Impossible de charger les sessions existantes.'
- if(sessions.data?.length){
-  within<HTMLElement>('#session-list').innerHTML=`<details class="remote-existing"><summary>Sessions existantes (${sessions.data.length})</summary>${sessions.data.map((session,index)=>`<div class="session-row"><span>Session ${index+1} · expire à ${new Date(session.expires_at).toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'})}</span><button class="button secondary" data-resume-session="${esc(session.id)}">Contrôler</button><button class="button secondary" data-update-session="${esc(session.id)}">Charger ce script</button><button class="button secondary" data-end-session="${esc(session.id)}">Terminer</button></div>`).join('')}</details>`
-  d.querySelectorAll<HTMLButtonElement>('[data-resume-session]').forEach(button=>button.onclick=()=>{
-   const existing=sessions.data?.find(item=>item.id===button.dataset.resumeSession)
-   if(existing){reconnect={id:existing.id,token:'',sequence:existing.sequence};within<HTMLButtonElement>('#create-session').click()}
-  })
-  d.querySelectorAll<HTMLButtonElement>('[data-update-session]').forEach(button=>button.onclick=async()=>{
-   const {error}=await cloud!.rpc('update_reading_snapshot',{session_id:button.dataset.updateSession,new_snapshot:{title:s.title,html,revision:s.revision,settings:workspace.settings}})
-   feedback.textContent=error?error.message:'Nouvelle version envoyée au lecteur en pause.'
-  })
-  d.querySelectorAll<HTMLButtonElement>('[data-end-session]').forEach(button=>button.onclick=async()=>{
-   const {error}=await cloud!.rpc('revoke_reading_session',{session_id:button.dataset.endSession})
-   if(error){feedback.textContent=error.message;return}
-   button.closest('.session-row')?.remove()
-  })
- }
- let reconnect:{id:string;token:string;sequence:number}|null=null
  within<HTMLButtonElement>('#create-session').onclick=async()=>{
   const createButton=within<HTMLButtonElement>('#create-session')
   createButton.disabled=true
   try{
-   const {data,error}=reconnect?{data:reconnect,error:null}:await cloud!.rpc('create_reading_session',{snapshot:{title:s.title,html,revision:s.revision,settings:workspace.settings}})
+   const {data,error}=await cloud!.rpc('create_project_reading_session',{p_project_id:project.id,p_script_id:s.id,p_snapshot:{title:s.title,html,revision:s.revision,settings:workspace.settings,scriptId:s.id}})
    if(error)throw error
+   if(!d.open)return
    const sessionId=data.id as string
-   const link=data.token?location.origin+'/lecteur.html#'+new URLSearchParams({server:cloudUrl,key:cloudKey,token:data.token as string}).toString():''
+   const code=data.code as string
+   if(data.scriptId!==s.id){const switched=await cloud!.rpc('switch_project_reading_script',{p_session_id:sessionId,p_script_id:s.id,p_snapshot:{title:s.title,html,revision:s.revision,settings:workspace.settings,scriptId:s.id}});if(switched.error)throw switched.error;data.sequence=switched.data}
+   if(!d.open)return
    let sequence=Number(data.sequence||0),busy=false
    const content=within<HTMLElement>('#remote-content')
    content.hidden=false
    within<HTMLElement>('#remote-intro').hidden=true
-   content.innerHTML=`<div class="remote-stage-top"><div><span class="remote-kicker">SCRIPT EN COURS</span><strong>${esc(s.title)}</strong></div><span id="remote-status" class="remote-status" role="status">Lecteur en attente</span></div>
-    <div class="remote-connection"><details id="remote-link-details" ${link?'open':''}><summary>Connecter l’iPad</summary>${link?`<div class="remote-link-row"><input id="session-link" aria-label="Lien du lecteur" readonly value="${esc(link)}"><button id="copy-link" class="button secondary">Copier le lien</button></div>`:'<p>Le lien initial reste valable sur le lecteur déjà associé.</p>'}</details><button id="revoke-session" class="remote-text-button">Terminer la session</button></div>
+   content.innerHTML=`<div class="remote-stage-top"><div><span class="remote-kicker">PROJET EN COURS</span><strong>${esc(project.name)}</strong></div><span id="remote-status" class="remote-status" role="status">Lecteur en attente</span></div>
+    <div class="remote-connection"><div class="remote-pair-code"><span>Code pour rejoindre sur l’iPad</span><strong>${esc(code)}</strong><small>Même compte · session de deux heures</small></div><label class="remote-script-choice">Script<select id="remote-script">${project.scripts.filter(item=>!item.deletedAt).map(item=>`<option value="${esc(item.id)}" ${item.id===s.id?'selected':''}>${esc(item.title)}</option>`).join('')}</select></label><button id="revoke-session" class="remote-text-button">Terminer la session</button></div>
     <div class="remote-preview-shell"><div class="remote-preview-head"><div><strong>Aperçu du lecteur</strong><span>Fais défiler le texte ou choisis un passage pour la reprise.</span></div><label>Position<select id="remote-position"><option value="">Début du script</option>${blocks.map(node=>`<option value="${esc(node.dataset.id!)}">${esc((node.textContent||'Paragraphe').slice(0,70))}</option>`).join('')}</select></label></div><div id="remote-preview" class="remote-preview" tabindex="0" aria-label="Aperçu du script et choix du passage"><article id="remote-preview-content">${html}</article></div></div>
     <div class="remote-console"><div class="remote-console-head"><strong>Commandes du lecteur</strong><span>Les changements sont envoyés à l’iPad lorsque tu les appliques.</span></div><div class="remote-control-grid">
      <section class="remote-control-section"><h3>Lecture</h3><div class="remote-field-grid"><div class="remote-field"><span>Vitesse</span><div class="remote-stepper"><button id="remote-speed-minus" aria-label="Diminuer la vitesse">−</button><input id="remote-speed" aria-label="Vitesse en pixels par seconde" type="number" inputmode="numeric" min="5" max="120" value="${workspace.settings.speed}"><small>px/s</small><button id="remote-speed-plus" aria-label="Augmenter la vitesse">+</button></div><input id="remote-speed-range" type="range" min="5" max="120" value="${workspace.settings.speed}" aria-label="Régler la vitesse"></div><label class="remote-field">Décompte<select id="remote-countdown"><option value="0">Aucun</option><option value="3">3 s</option><option value="5">5 s</option><option value="10">10 s</option></select></label></div><div class="remote-transport"><button id="remote-pause" class="button secondary">Ⅱ Pause</button><button id="remote-seek" class="button secondary">Aller ici</button><button id="remote-play" class="button primary">▷ Lire ici</button></div></section>
      <section class="remote-control-section"><h3>Texte</h3><div class="remote-field-grid"><div class="remote-field"><span>Taille du texte</span><div class="remote-stepper"><button id="remote-size-minus" aria-label="Diminuer la taille du texte">−</button><input id="remote-size" aria-label="Taille du texte en pixels" type="number" inputmode="numeric" min="28" max="100" value="${workspace.settings.size}"><small>px</small><button id="remote-size-plus" aria-label="Augmenter la taille du texte">+</button></div></div><label class="remote-field">Police<select id="remote-font"><option value="sans-serif">Sans sérif</option><option value="Georgia">Georgia</option><option value="original">Polices du document</option></select></label></div><label class="remote-check"><input id="remote-proportional" type="checkbox"> Tailles relatives du script</label></section>
      <section class="remote-control-section"><h3>Affichage</h3><span class="remote-field-caption">Miroirs</span><div class="remote-mirrors"><button id="remote-mirror-x" type="button" aria-pressed="false">↔ Horizontal</button><button id="remote-mirror-y" type="button" aria-pressed="false">↕ Vertical</button></div></section>
     </div><div class="remote-console-footer"><button id="remote-apply-settings" class="button secondary">Appliquer les réglages</button><span>La vitesse, le texte, le décompte et les miroirs.</span></div></div>`
+   within<HTMLSelectElement>('#remote-script').onchange=async event=>{
+    const picker=event.currentTarget as HTMLSelectElement
+    const target=project.scripts.find(item=>item.id===picker.value&&!item.deletedAt)
+    if(!target||target.id===s.id)return
+    picker.disabled=true;feedback.textContent='Chargement du script sur l’iPad…'
+    try{
+     const nextHtml=generateHTML(target.content,extensions())
+     const {error:switchError}=await cloud!.rpc('switch_project_reading_script',{p_session_id:sessionId,p_script_id:target.id,p_snapshot:{title:target.title,html:nextHtml,revision:target.revision,settings:workspace.settings,scriptId:target.id}})
+     if(switchError)throw switchError
+     d.close();select(project,target);void remoteDialog(target)
+    }catch(e){feedback.textContent=message(e);picker.disabled=false;picker.value=s.id}
+   }
    const speed=within<HTMLInputElement>('#remote-speed'),speedRange=within<HTMLInputElement>('#remote-speed-range')
    const size=within<HTMLInputElement>('#remote-size'),position=within<HTMLSelectElement>('#remote-position')
    const preview=within<HTMLElement>('#remote-preview'),previewContent=within<HTMLElement>('#remote-preview-content')
@@ -323,7 +340,6 @@ async function remoteDialog(s:Script){
     }
     if(current?.dataset.id&&position.value!==current.dataset.id){position.value=current.dataset.id;markPosition()}
    },{passive:true})
-   if(link)within<HTMLButtonElement>('#copy-link').onclick=()=>{const input=within<HTMLInputElement>('#session-link');input.select();void navigator.clipboard.writeText(link).then(()=>feedback.textContent='Lien copié.').catch(()=>feedback.textContent='Sélectionne et copie le lien affiché.')}
    const command=async(action:string)=>{
     if(busy)return
     busy=true
@@ -352,8 +368,8 @@ async function remoteDialog(s:Script){
     const connected=state.last_seen&&Date.now()-new Date(state.last_seen).getTime()<15000
     status.textContent=state.revoked?'Session terminée':!connected?'Lecteur déconnecté ou en attente':state.ack_sequence===state.sequence?`Connecté · ${state.reader_state==='playing'?'lecture':state.reader_state==='countdown'?'décompte':'en pause'}`:'Connecté · commande en attente'
     status.classList.toggle('connected',!!connected&&!state.revoked)
-    if(connected)within<HTMLDetailsElement>('#remote-link-details').open=false
    },5000)
-  }catch(e){feedback.textContent=message(e);createButton.disabled=false}
+  }catch(e){feedback.textContent=message(e);createButton.disabled=false;createButton.hidden=false}
  }
+ within<HTMLButtonElement>('#create-session').click()
 }

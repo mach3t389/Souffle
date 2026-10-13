@@ -8,7 +8,7 @@ const alice='11111111-1111-4111-8111-111111111111',bob='22222222-2222-4222-8222-
 const payload={schemaVersion:2,projects:[],settings:{}}
 before(async()=>{
  await db.exec(`create schema auth;create schema extensions;create role anon;create role authenticated;create table auth.users(id uuid primary key);insert into auth.users values('${alice}'),('${bob}');create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema public,auth to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;`)
- for(const name of ['001_workspace.sql','002_reading_sessions.sql'])await db.exec(await readFile(new URL('../supabase/migrations/'+name,import.meta.url),'utf8'))
+ for(const name of ['001_workspace.sql','002_reading_sessions.sql','20261013045312_project_pairing.sql'])await db.exec(await readFile(new URL('../supabase/migrations/'+name,import.meta.url),'utf8'))
 })
 after(()=>db.close())
 async function as(role,id,action){await db.exec(`set role ${role};set request.jwt.claim.sub='${id||''}';`);try{return await action()}finally{await db.exec('reset role;reset request.jwt.claim.sub;')}}
@@ -82,5 +82,38 @@ test('script replacement requires a connected, confirmed pause',async()=>{
   assert.equal(state.command.action,'reload');assert.equal(state.snapshot.title,'Après')
   const ack=(await db.query('select public.poll_reading_session($1,1,$2,false) as result',[session.token,'paused'])).rows[0].result
   assert.equal(ack.snapshot,null)
+ })
+})
+
+test('project code is owned, rate limited, and switches scripts without a new session',async()=>{
+ let session,joined
+ const initial={html:'<p>Premier</p>',title:'Premier',settings:{},scriptId:'script-a'}
+ await as('authenticated',alice,async()=>{
+  session=(await db.query('select public.create_project_reading_session($1,$2,$3) as result',['project-a','script-a',JSON.stringify(initial)])).rows[0].result
+  assert.match(session.code,/^[0-9]{6}$/)
+  const again=(await db.query('select public.create_project_reading_session($1,$2,$3) as result',['project-a','script-b',JSON.stringify(initial)])).rows[0].result
+  assert.equal(again.id,session.id);assert.equal(again.code,session.code);assert.equal(again.scriptId,'script-a')
+  assert.equal((await db.query('select project_id,script_id,pair_code from public.reading_sessions where id=$1',[session.id])).rows[0].pair_code,session.code)
+ })
+ await as('authenticated',bob,async()=>{
+  assert.equal((await db.query('select public.join_project_reading_session($1) as result',[session.code])).rows[0].result.error,'invalid')
+  assert.equal((await db.query('select id from public.reading_sessions')).rows.length,0)
+ })
+ await as('authenticated',alice,async()=>{
+  joined=(await db.query('select public.join_project_reading_session($1) as result',[session.code])).rows[0].result
+  assert.match(joined.token,/^[a-f0-9]{64}$/);assert.equal(joined.id,session.id)
+  const next={html:'<p>Deuxième</p>',title:'Deuxième',settings:{},scriptId:'script-b'}
+  assert.equal((await db.query('select public.switch_project_reading_script($1,$2,$3) as sequence',[session.id,'script-b',JSON.stringify(next)])).rows[0].sequence,1)
+ })
+ await as('anon',null,async()=>{
+  await assert.rejects(db.query('select public.join_project_reading_session($1)',[session.code]))
+  await assert.rejects(db.query('select public.switch_project_reading_script($1,$2,$3)',[session.id,'script-c','{}']))
+  const state=(await db.query('select public.poll_reading_session($1,$2,$3,$4) as result',[joined.token,-1,'paused',true])).rows[0].result
+  assert.equal(state.snapshot.title,'Deuxième');assert.equal(state.command.action,'reload')
+ })
+ await as('authenticated',alice,async()=>{
+  const wrong=session.code==='000000'?'000001':'000000'
+  for(let i=0;i<8;i++)assert.equal((await db.query('select public.join_project_reading_session($1) as result',[wrong])).rows[0].result.error,'invalid')
+  assert.equal((await db.query('select public.join_project_reading_session($1) as result',[session.code])).rows[0].result.error,'limited')
  })
 })
