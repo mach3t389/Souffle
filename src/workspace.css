@@ -397,3 +397,42 @@ dialog button:disabled,.auth-card button:disabled{opacity:.5;cursor:default}
  .remote-stage .remote-more{margin-top:8px}
  .remote-stage .remote-more summary{min-height:44px}
 }
+
+/* Télécommande : aperçu neutre et barre compacte identique au lecteur. */
+.remote-stage #remote-content{position:relative}
+.remote-stage .remote-preview article{font-size:26px;line-height:1.5;transform:none!important}
+.remote-stage .remote-preview article p{line-height:1.5;margin-bottom:1em}
+.remote-stage .remote-preview article span[style]{font-size:inherit!important;font-family:inherit!important}
+.remote-stage .remote-preview-hint{display:none}
+.remote-stage .remote-pairing{margin:14px 0 0;border-top:1px solid #3a473d;border-bottom:1px solid #3a473d}
+.remote-stage .remote-pairing summary{min-height:48px}
+.remote-stage .remote-more{margin-top:0;border-top:0}
+.remote-stage .remote-more summary{min-height:48px}
+.remote-stage .remote-settings-help{font-size:12px;line-height:1.45;color:#b9c9b4;margin:14px 0 0}
+.remote-stage #remote-message{position:absolute;z-index:5;top:122px;bottom:auto;left:50%;transform:translateX(-50%);max-width:min(420px,calc(100vw - 28px));padding:7px 11px;border:1px solid #49654b;border-radius:8px;background:#22362a;color:#e8f1e4;font-size:12px;text-align:center;box-shadow:0 5px 18px #0005}
+.remote-stage #remote-message.is-error{border-color:#a26c62;background:#4b2827;color:#ffe5df}
+.remote-stage .remote-mini button{display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;margin:0;border:0;border-radius:9px;background:transparent;color:#c9dcc0;cursor:pointer}
+.remote-stage .remote-mini button:hover{background:#304034;color:#edf1e7}
+.remote-stage .remote-mini #remote-expand.is-open svg{transform:rotate(180deg)}
+@media(max-width:600px){
+ .remote-stage .remote-preview article{font-size:22px;line-height:1.5}
+ .remote-stage .remote-preview-hint{display:block;position:sticky;top:2px;z-index:2;width:max-content;max-width:100%;margin:0 auto 10px;padding:6px 10px;border-radius:7px;background:#26372bee;color:#d9ebd1;font-size:11px;text-align:center;pointer-events:none}
+ .remote-stage .remote-preview.has-interacted .remote-preview-hint{display:none}
+ .remote-stage .remote-status{display:flex;align-items:center;gap:5px;width:auto;height:auto;max-width:110px;border:0;background:none;font-size:0;white-space:nowrap}
+ .remote-stage .remote-status::before{content:"";display:block;flex:none;width:8px;height:8px;border-radius:50%;background:#8e8d75}
+ .remote-stage .remote-status.connected{background:none}
+ .remote-stage .remote-status.connected::before{background:#a9cda9}
+ .remote-stage .remote-status::after{content:attr(data-short);font-size:11px;color:#c9d0c5}
+ .remote-stage #remote-message{top:102px}
+ .remote-stage .remote-console.is-collapsed{position:absolute;z-index:4;left:50%;bottom:12px;transform:translateX(-50%);width:auto;max-height:none;padding:4px;border:1px solid #3b4b3a;border-radius:14px;background:rgba(20,29,23,.94);box-shadow:0 3px 16px #0005}
+ .remote-stage .remote-mini{justify-content:center;gap:2px;min-height:44px}
+ .remote-stage .remote-mini button{flex:none;width:44px;height:44px;min-height:44px;padding:0;font-size:0}
+ .remote-stage .remote-mini #remote-mini-play{flex:none}
+ .remote-stage .remote-console:not(.is-collapsed) .remote-mini{justify-content:center;padding-top:6px}
+ .remote-stage .remote-console{padding-bottom:12px}
+ .remote-stage .remote-more .remote-control-grid{padding-top:10px}
+ .remote-stage .remote-console-footer span{display:block}
+}
+@supports(padding-bottom:env(safe-area-inset-bottom)){@media(max-width:600px){.remote-stage .remote-console.is-collapsed{bottom:calc(12px + env(safe-area-inset-bottom))}}}
+
+@media(max-width:600px){.remote-stage #remote-message:not(.is-error){display:none}}
