@@ -67,7 +67,7 @@ function store(markDirty=true){
 }
 function capture(){if(editor){const s=activeScript();if(s)s.content=blockIds(editor.getJSON())}}
 function flush(){window.clearTimeout(timer);capture();return store(false)}
- function refreshApp(){if(!flush()){toast("Actualisation arrêtée : conserve d’abord ton brouillon local ou résous le conflit.");return}if(!navigator.onLine){toast("Connecte cet appareil à Internet pour actualiser Souffle.");return}window.location.replace(window.location.pathname+"?actualisation="+Date.now()+window.location.hash)}
+ function refreshApp(){if(!navigator.onLine){toast("Connecte cet appareil à Internet pour actualiser Souffle.");return}if(conflict){capture();try{localStorage.setItem(`souffle.conflict.backup.${user?.id||'local'}`,JSON.stringify({at:Date.now(),workspace:cloneJson(workspace)}))}catch{toast("Actualisation arrêtée : impossible de conserver le brouillon local.");return}}else if(!flush()){toast("Actualisation arrêtée : conserve d’abord ton brouillon local ou résous le conflit.");return}window.location.replace(window.location.pathname+"?actualisation="+Date.now()+window.location.hash)}
 function mutate(action:()=>void){capture();action();store();render()}
 async function synchronize(){
  if(!user||!cloud||syncing||conflict||storageError||changingAccount)return
@@ -308,14 +308,14 @@ async function remoteDialog(s:Script){
    const content=within<HTMLElement>('#remote-content')
    content.hidden=false
    within<HTMLElement>('#remote-intro').hidden=true
-   content.innerHTML=`<div class="remote-stage-top"><div><span class="remote-kicker">PROJET EN COURS</span><strong>${esc(project.name)}</strong></div><span id="remote-status" class="remote-status" role="status">Lecteur en attente</span></div>
-     <div class="remote-connection"><label class="remote-script-choice">Script<select id="remote-script">${project.scripts.filter(item=>!item.deletedAt).map(item=>`<option value="${esc(item.id)}" ${item.id===s.id?'selected':''}>${esc(item.title)}</option>`).join('')}</select></label><details class="remote-pairing"><summary>Associer l’iPad <span>· Voir le code</span></summary><div class="remote-pairing-content"><div class="remote-pair-code"><span>Code pour rejoindre sur l’iPad</span><strong>${esc(code)}</strong><small>Même compte · session de deux heures</small></div><button id="revoke-session" class="remote-text-button">Terminer la session</button></div></details></div>
+   content.innerHTML=`<div class="remote-stage-top"><span class="remote-kicker">PROJET EN COURS</span><strong>${esc(project.name)}</strong></div>
+     <div class="remote-connection"><label class="remote-script-choice">Script<select id="remote-script">${project.scripts.filter(item=>!item.deletedAt).map(item=>`<option value="${esc(item.id)}" ${item.id===s.id?'selected':''}>${esc(item.title)}</option>`).join('')}</select></label><span id="remote-status" class="remote-status" role="status" title="Lecteur en attente">Lecteur en attente</span></div></div>
     <div class="remote-preview-shell"><div class="remote-preview-head"><div><strong>Aperçu du lecteur</strong><span>Fais défiler le texte ou choisis un passage pour la reprise.</span></div><label>Position<select id="remote-position"><option value="">Début du script</option>${blocks.map(node=>`<option value="${esc(node.dataset.id!)}">${esc((node.textContent||'Paragraphe').slice(0,70))}</option>`).join('')}</select></label></div><div id="remote-preview" class="remote-preview" tabindex="0" aria-label="Aperçu du script et choix du passage"><article id="remote-preview-content">${html}</article></div></div>
-     <div class="remote-console"><div class="remote-console-head"><strong>Lecture</strong><span>Choisis le passage, puis lance la lecture sur l’iPad.</span></div><div class="remote-primary-controls"><div class="remote-field"><span>Vitesse</span><div class="remote-stepper"><button id="remote-speed-minus" aria-label="Diminuer la vitesse">−</button><input id="remote-speed" aria-label="Vitesse en pixels par seconde" type="number" inputmode="numeric" min="5" max="120" value="${workspace.settings.speed}"><small>px/s</small><button id="remote-speed-plus" aria-label="Augmenter la vitesse">+</button></div><input id="remote-speed-range" type="range" min="5" max="120" value="${workspace.settings.speed}" aria-label="Régler la vitesse"></div><div class="remote-transport"><button id="remote-pause" class="button secondary">Ⅱ Pause</button><button id="remote-seek" class="button secondary">Aller ici</button><button id="remote-play" class="button primary">▷ Lire</button></div></div>
-     <details class="remote-more"><summary>••• Réglages du lecteur</summary><div class="remote-control-grid"><section class="remote-control-section"><h3>Décompte</h3><label class="remote-field">Décompte<select id="remote-countdown"><option value="0">Aucun</option><option value="3">3 s</option><option value="5">5 s</option><option value="10">10 s</option></select></label></section>
+     <div class="remote-console" id="remote-console"><div class="remote-mini"><button id="remote-mini-play" class="button primary" aria-label="Lancer la lecture">▷ Lire</button><button id="remote-expand" class="button secondary" aria-expanded="false">⌃ Réglages</button></div><div class="remote-console-body"><div class="remote-console-head"><strong>Lecture</strong><span>Choisis le passage, puis lance la lecture sur l’iPad.</span></div><div class="remote-primary-controls"><div class="remote-field"><span>Vitesse</span><div class="remote-stepper"><button id="remote-speed-minus" aria-label="Diminuer la vitesse">−</button><input id="remote-speed" aria-label="Vitesse en pixels par seconde" type="number" inputmode="numeric" min="5" max="120" value="${workspace.settings.speed}"><small>px/s</small><button id="remote-speed-plus" aria-label="Augmenter la vitesse">+</button></div><input id="remote-speed-range" type="range" min="5" max="120" value="${workspace.settings.speed}" aria-label="Régler la vitesse"></div><div class="remote-transport"><button id="remote-pause" class="button secondary">Ⅱ Pause</button><button id="remote-seek" class="button secondary">Aller ici</button><button id="remote-play" class="button primary">▷ Lire</button></div></div>
+     <details class="remote-more"><summary>••• Réglages et code iPad</summary><details class="remote-pairing"><summary>Associer l’iPad <span>· Voir le code</span></summary><div class="remote-pairing-content"><div class="remote-pair-code"><span>Code pour rejoindre sur l’iPad</span><strong>${esc(code)}</strong><small>Même compte · session de deux heures</small></div><button id="revoke-session" class="remote-text-button">Terminer la session</button></div></details><div class="remote-control-grid"><section class="remote-control-section"><h3>Décompte</h3><label class="remote-field">Décompte<select id="remote-countdown"><option value="0">Aucun</option><option value="3">3 s</option><option value="5">5 s</option><option value="10">10 s</option></select></label></section>
      <section class="remote-control-section"><h3>Texte</h3><div class="remote-field-grid"><div class="remote-field"><span>Taille du texte</span><div class="remote-stepper"><button id="remote-size-minus" aria-label="Diminuer la taille du texte">−</button><input id="remote-size" aria-label="Taille du texte en pixels" type="number" inputmode="numeric" min="28" max="100" value="${workspace.settings.size}"><small>px</small><button id="remote-size-plus" aria-label="Augmenter la taille du texte">+</button></div></div><label class="remote-field">Police<select id="remote-font"><option value="sans-serif">Sans sérif</option><option value="Georgia">Georgia</option><option value="original">Polices du document</option></select></label></div><label class="remote-check"><input id="remote-proportional" type="checkbox"> Tailles relatives du script</label></section>
      <section class="remote-control-section"><h3>Affichage</h3><span class="remote-field-caption">Miroirs</span><div class="remote-mirrors"><button id="remote-mirror-x" type="button" aria-pressed="false">↔ Horizontal</button><button id="remote-mirror-y" type="button" aria-pressed="false">↕ Vertical</button></div></section>
-    </div><div class="remote-console-footer"><button id="remote-apply-settings" class="button secondary">Appliquer les réglages</button><span>Taille, police, décompte et miroirs.</span></div></details></div>`
+    </div><div class="remote-console-footer"><button id="remote-apply-settings" class="button secondary">Appliquer les réglages</button><span>Taille, police, décompte et miroirs.</span></div></details></div></div>`
    within<HTMLSelectElement>('#remote-script').onchange=async event=>{
     const picker=event.currentTarget as HTMLSelectElement
     const target=project.scripts.find(item=>item.id===picker.value&&!item.deletedAt)
@@ -323,14 +323,22 @@ async function remoteDialog(s:Script){
     picker.disabled=true;feedback.textContent='Chargement du script sur l’iPad…'
     try{
      const nextHtml=generateHTML(target.content,extensions())
-     const {error:switchError}=await cloud!.rpc('switch_project_reading_script',{p_session_id:sessionId,p_script_id:target.id,p_snapshot:{title:target.title,html:nextHtml,revision:target.revision,settings:workspace.settings,scriptId:target.id}})
+     const {data:nextSequence,error:switchError}=await cloud!.rpc('switch_project_reading_script',{p_session_id:sessionId,p_script_id:target.id,p_snapshot:{title:target.title,html:nextHtml,revision:target.revision,settings:workspace.settings,scriptId:target.id}})
      if(switchError)throw switchError
-     d.close();select(project,target);void remoteDialog(target)
+     sequence=Number(nextSequence)||sequence;s=target
+     previewContent.innerHTML=nextHtml
+     position.innerHTML='<option value="">Début du script</option>'+Array.from(previewContent.querySelectorAll<HTMLElement>('[data-id]')).map(node=>`<option value="${esc(node.dataset.id!)}">${esc((node.textContent||'Paragraphe').slice(0,70))}</option>`).join('')
+     position.value='';preview.scrollTop=0;syncPreview();markPosition()
+     remotePlaying=false;showPlayState();picker.disabled=false
+     feedback.textContent='Script envoyé sur l’iPad · même code de connexion.'
     }catch(e){feedback.textContent=message(e);picker.disabled=false;picker.value=s.id}
    }
    const speed=within<HTMLInputElement>('#remote-speed'),speedRange=within<HTMLInputElement>('#remote-speed-range')
    const size=within<HTMLInputElement>('#remote-size'),position=within<HTMLSelectElement>('#remote-position')
    const preview=within<HTMLElement>('#remote-preview'),previewContent=within<HTMLElement>('#remote-preview-content')
+   const consolePanel=within<HTMLElement>('#remote-console'),expand=within<HTMLButtonElement>('#remote-expand'),miniPlay=within<HTMLButtonElement>('#remote-mini-play')
+   if(window.matchMedia('(max-width: 600px)').matches){consolePanel.classList.add('is-collapsed');within<HTMLElement>('.remote-console-body').prepend(within<HTMLElement>('.remote-preview-head label'))}
+   expand.onclick=()=>{const collapsed=consolePanel.classList.toggle('is-collapsed');expand.setAttribute('aria-expanded',String(!collapsed));expand.textContent=collapsed?'⌃ Réglages':'⌄ Replier'}
    const countdown=within<HTMLSelectElement>('#remote-countdown'),font=within<HTMLSelectElement>('#remote-font')
    const mirrorX=within<HTMLButtonElement>('#remote-mirror-x'),mirrorY=within<HTMLButtonElement>('#remote-mirror-y')
    const proportional=within<HTMLInputElement>('#remote-proportional')
@@ -341,7 +349,7 @@ async function remoteDialog(s:Script){
    position.value=readingStart?.scriptId===s.id?readingStart.blockId:''
    const clamp=(value:number,min:number,max:number,fallback:number)=>Math.round(Math.max(min,Math.min(max,Number.isFinite(value)?value:fallback)))
    const syncSpeed=()=>{speed.value=String(clamp(Number(speed.value),5,120,35));speedRange.value=speed.value}
-   const syncSize=()=>{size.value=String(clamp(Number(size.value),28,100,54));previewContent.style.fontSize=`${size.value}px`}
+   const syncSize=()=>{size.value=String(clamp(Number(size.value),28,100,54));previewContent.style.fontSize=`${window.matchMedia('(max-width: 600px)').matches?clamp(Number(size.value)*.62,20,64,34):size.value}px`}
    const syncPreview=()=>{syncSize();previewContent.style.fontFamily=font.value==='Georgia'?'Georgia,serif':font.value==='original'?'inherit':'Arial,Helvetica,sans-serif';previewContent.classList.toggle('remote-proportional',proportional.checked);previewContent.style.transform=`scale(${mirrorX.getAttribute('aria-pressed')==='true'?-1:1},${mirrorY.getAttribute('aria-pressed')==='true'?-1:1})`}
    const markPosition=()=>{previewContent.querySelectorAll<HTMLElement>('.remote-selected').forEach(node=>node.classList.remove('remote-selected'));if(position.value)Array.from(previewContent.querySelectorAll<HTMLElement>('[data-id]')).find(node=>node.dataset.id===position.value)?.classList.add('remote-selected')}
    syncSpeed();syncPreview();markPosition()
@@ -357,7 +365,13 @@ async function remoteDialog(s:Script){
    font.onchange=syncPreview;proportional.onchange=syncPreview
    ;[mirrorX,mirrorY].forEach(button=>button.onclick=()=>{button.setAttribute('aria-pressed',String(button.getAttribute('aria-pressed')!=='true'));syncPreview()})
    position.onchange=()=>{markPosition();if(position.value)previewContent.querySelector<HTMLElement>(`[data-id="${CSS.escape(position.value)}"]`)?.scrollIntoView({behavior:'smooth',block:'center'});else preview.scrollTo({top:0,behavior:'smooth'})}
-   preview.onclick=event=>{const block=(event.target as HTMLElement).closest<HTMLElement>('[data-id]');if(block?.dataset.id){position.value=block.dataset.id;markPosition()}}
+   const selectTappedBlock=(target:EventTarget|null)=>{const block=(target as HTMLElement).closest<HTMLElement>('[data-id]');if(block?.dataset.id){position.value=block.dataset.id;markPosition()}}
+   let lastTouch=0,touchStart:{x:number,y:number,at:number}|null=null
+   preview.addEventListener('touchstart',event=>{if(event.touches.length===1)touchStart={x:event.touches[0].clientX,y:event.touches[0].clientY,at:Date.now()};else touchStart=null},{passive:true})
+   preview.addEventListener('touchmove',event=>{if(!touchStart||!event.touches.length)return;if(Math.abs(event.touches[0].clientX-touchStart.x)>=12||Math.abs(event.touches[0].clientY-touchStart.y)>=12)touchStart=null},{passive:true})
+   preview.addEventListener('touchcancel',()=>{touchStart=null},{passive:true})
+   preview.addEventListener('touchend',event=>{if(!touchStart||!event.changedTouches.length)return;const end=event.changedTouches[0];const tapped=Math.abs(end.clientX-touchStart.x)<12&&Math.abs(end.clientY-touchStart.y)<12&&Date.now()-touchStart.at<650;touchStart=null;if(!tapped)return;lastTouch=Date.now();event.preventDefault();selectTappedBlock(event.target);void command(remotePlaying?'pause':'play')},{passive:false})
+   preview.onclick=event=>{if(Date.now()-lastTouch<650)return;selectTappedBlock(event.target);if(window.matchMedia('(max-width: 600px)').matches)void command(remotePlaying?'pause':'play')}
    preview.addEventListener('scroll',()=>{
     if(preview.scrollTop<16){if(position.value){position.value='';markPosition()}return}
     const line=preview.getBoundingClientRect().top+preview.clientHeight*.52
@@ -368,6 +382,8 @@ async function remoteDialog(s:Script){
     }
     if(current?.dataset.id&&position.value!==current.dataset.id){position.value=current.dataset.id;markPosition()}
    },{passive:true})
+   let remotePlaying=false
+   const showPlayState=()=>{miniPlay.textContent=remotePlaying?'Ⅱ Pause':'▷ Lire';miniPlay.setAttribute('aria-label',remotePlaying?'Mettre en pause':'Lancer la lecture')}
    const command=async(action:string)=>{
     if(busy)return
     busy=true
@@ -378,9 +394,11 @@ async function remoteDialog(s:Script){
      if(sendError)throw sendError
      if(result.conflict)throw new Error('La session a changé. Réessaie après sa mise à jour.')
      sequence=result.sequence
+     if(action==='play'||action==='pause'){remotePlaying=action==='play';showPlayState()}
      feedback.textContent='Commande envoyée · confirmation en attente.'
     }catch(e){feedback.textContent=message(e)}finally{busy=false}
    }
+   miniPlay.onclick=()=>void command(remotePlaying?'pause':'play')
    within<HTMLButtonElement>('#remote-pause').onclick=()=>void command('pause')
    within<HTMLButtonElement>('#remote-seek').onclick=()=>void command('seek')
    within<HTMLButtonElement>('#remote-play').onclick=()=>void command('play')
@@ -393,9 +411,11 @@ async function remoteDialog(s:Script){
     const status=within<HTMLElement>('#remote-status')
     if(pollError){status.textContent='Connexion interrompue';return}
     sequence=state.sequence
+    if(state.ack_sequence===state.sequence&&(state.reader_state==='playing'||state.reader_state==='paused')){remotePlaying=state.reader_state==='playing';showPlayState()}
     const connected=state.last_seen&&Date.now()-new Date(state.last_seen).getTime()<15000
     status.textContent=state.revoked?'Session terminée':!connected?'Lecteur déconnecté ou en attente':state.ack_sequence===state.sequence?`Connecté · ${state.reader_state==='playing'?'lecture':state.reader_state==='countdown'?'décompte':'en pause'}`:'Connecté · commande en attente'
     status.classList.toggle('connected',!!connected&&!state.revoked)
+    status.title=status.textContent||''
    },5000)
   }catch(e){feedback.textContent=message(e);createButton.disabled=false;createButton.hidden=false}
  }

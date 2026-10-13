@@ -364,3 +364,36 @@ dialog button:disabled,.auth-card button:disabled{opacity:.5;cursor:default}
 .remote-stage .remote-more:not([open]) > :not(summary),.remote-stage .remote-pairing:not([open]) > :not(summary){display:none}
 
 @media(max-width:600px){.remote-stage .remote-preview article{font-size:30px;line-height:1.5}}
+
+/* Mobile : le texte occupe l'écran, commandes et association restent repliées. */
+.remote-stage .remote-mini{display:none}
+.remote-stage .remote-pairing{margin-top:16px;border-top:1px solid #3a473d}
+.remote-stage .remote-pairing-content{padding-bottom:12px}
+@media(max-width:600px){
+ .remote-stage .dialog-header{min-height:48px;padding:5px 14px}
+ .remote-stage .dialog-header h2{font-size:16px}
+ .remote-stage .remote-stage-top{display:none}
+ .remote-stage .remote-connection{display:flex;align-items:center;gap:12px;padding:5px 14px;min-height:46px;flex-wrap:nowrap}
+ .remote-stage .remote-script-choice{display:block;flex:1;min-width:0;font-size:0}
+ .remote-stage .remote-script-choice select{width:100%;min-height:36px;margin:0;padding:6px 32px 6px 10px;font-size:14px}
+ .remote-stage .remote-status{display:block;flex:none;width:10px;height:10px;border-radius:50%;background:#8e8d75;font-size:0;overflow:hidden}
+ .remote-stage .remote-status.connected{background:#a9cda9}
+ .remote-stage .remote-preview-head{display:none}
+ .remote-stage .remote-preview-shell{min-height:0}
+ .remote-stage .remote-preview{min-height:0;padding:20px 18px 0;touch-action:pan-y}
+ .remote-stage .remote-preview article{font-size:30px;line-height:1.5}
+ .remote-stage .remote-preview article p{margin-bottom:1em}
+ .remote-stage .remote-console{max-height:66vh;padding:0 12px 12px;overflow:auto}
+ .remote-stage .remote-console.is-collapsed{max-height:none;padding:0 12px 6px;overflow:visible}
+ .remote-stage .remote-mini{display:flex;align-items:center;gap:8px;min-height:54px}
+ .remote-stage .remote-mini .button{min-height:42px;padding:7px 12px;font-size:14px}
+ .remote-stage #remote-mini-play{flex:1}
+ .remote-stage #remote-expand{flex:none}
+ .remote-stage .remote-console.is-collapsed .remote-console-body{display:none}
+ .remote-stage .remote-console-body{padding:6px 2px 14px}
+ .remote-stage .remote-console-body>label{display:flex;align-items:center;gap:10px;margin:0 0 12px;color:#c9d8c4;font-size:13px}
+ .remote-stage .remote-console-body>label select{flex:1;min-width:0;margin:0;min-height:40px;padding:7px 30px 7px 9px;font-size:13px}
+ .remote-stage .remote-pairing summary{min-height:44px;font-size:13px}
+ .remote-stage .remote-more{margin-top:8px}
+ .remote-stage .remote-more summary{min-height:44px}
+}
