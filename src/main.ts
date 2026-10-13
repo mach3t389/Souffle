@@ -426,8 +426,9 @@ async function remoteDialog(s:Script){
     status.textContent=state.revoked?'Session terminée':!connected?'Lecteur déconnecté ou en attente':state.ack_sequence===state.sequence?`Connecté · ${state.reader_state==='playing'?'lecture':state.reader_state==='countdown'?'décompte':'en pause'}`:'Connecté · commande en attente'
     status.classList.toggle('connected',!!connected&&!state.revoked)
     if(state.ack_sequence>=lastSentSequence&&lastSentSequence>0){if(sentVersion===appearanceVersion)appliedVersion=sentVersion;lastSentSequence=0;feedback.classList.remove('is-error');feedback.textContent='Commande appliquée sur l’iPad.';window.setTimeout(()=>{if(feedback.textContent==='Commande appliquée sur l’iPad.')feedback.textContent=''},2500);status.dataset.short='Appliqué'}
+    else if(!connected)status.dataset.short='iPad absent'
     else if(lastSentSequence>0)status.dataset.short='Envoi…'
-    else status.dataset.short=state.revoked?'Terminé':!connected?'En attente':'Connecté'
+    else status.dataset.short=state.revoked?'Terminé':'Connecté'
     status.title=status.textContent||''
    },5000)
   }catch(e){feedback.textContent=message(e);createButton.disabled=false;createButton.hidden=false}
