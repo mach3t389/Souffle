@@ -33,7 +33,7 @@ L’espace cloud utilise une ligne JSON par compte avec révision atomique, droi
 
 Les brouillons locaux sont séparés par compte. Les projets locaux sont importés explicitement dans le compte, une fois, puis peuvent être restaurés depuis une sauvegarde. Les modifications sont enregistrées sur l’appareil; le bouton d’état dans l’en-tête ou « Synchroniser maintenant » dans Mon compte envoie les changements au cloud ou récupère ceux d’un autre appareil. Une lecture du cloud a lieu à la connexion. Aucune interrogation périodique de l’espace de travail n’est lancée; les conflits nécessitent une résolution explicite.
 
-La télécommande crée une session avec lien temporaire, version figée du script, commandes ordonnées, confirmations, état de connexion, réglages à distance et révocation. Son transport utilise les fonctions REST Supabase pour limiter les dépendances du vieux lecteur. Les vérifications ne sont actives que pendant la session; la connexion réelle entre appareils reste à vérifier sur le service configuré.
+La télécommande crée une session avec lien temporaire, version figée du script, commandes ordonnées, confirmations, état de connexion, réglages à distance et révocation. Son transport utilise les fonctions REST Supabase pour limiter les dépendances du vieux lecteur. Les vérifications ne sont actives que pendant la session; la connexion réelle entre appareils reste à vérifier sur le service configuré. Dans la télécommande mobile, « Tester la vitesse » lance un essai sur le lecteur à sa position actuelle sans compte à rebours; une seconde pression arrête l’essai.
 
 Voir [la configuration détaillée](docs/CONFIGURATION.md) et `.env.example`. Aucune migration n’a été appliquée à une base externe par cette implémentation.
 
