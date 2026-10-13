@@ -105,6 +105,9 @@
 .reading-start[hidden]{display:none}.reading-start span{overflow-wrap:anywhere}.reading-start button{min-height:36px;flex-shrink:0}
 .tiptap h1,.tiptap h2,.tiptap h3{scroll-margin-top:110px}
 dialog{width:530px;max-height:85vh;overflow:auto}
+body.legacy-dialog-open::before{content:"";position:fixed;top:0;right:0;bottom:0;left:0;background:#0009;z-index:199}
+dialog.legacy-dialog{position:fixed;top:8vh;left:50%;transform:translateX(-50%);margin:0;width:calc(100vw - 32px);max-width:530px;max-height:84vh;display:block;z-index:200;background:var(--panel,#fff);color:inherit;border:1px solid var(--border,#aaa);border-radius:10px;padding:24px}
+dialog.legacy-dialog:not([open]){display:none}
 .dialog-header{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:15px}
 .dialog-header h2{margin:0;font-size:21px}
 dialog p{font-size:13px;line-height:1.7}
