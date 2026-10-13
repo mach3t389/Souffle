@@ -436,3 +436,29 @@ dialog button:disabled,.auth-card button:disabled{opacity:.5;cursor:default}
 @supports(padding-bottom:env(safe-area-inset-bottom)){@media(max-width:600px){.remote-stage .remote-console.is-collapsed{bottom:calc(12px + env(safe-area-inset-bottom))}}}
 
 @media(max-width:600px){.remote-stage #remote-message:not(.is-error){display:none}}
+
+/* Lecture : un point d'entrée stable sur toutes les pages. */
+.workbench .reading-hub-button{min-height:44px;border:1px solid var(--line);font-weight:700}
+.reading-hub-intro{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 20px}
+.reading-hub-options{display:grid;gap:14px}
+.reading-hub-options section{border:1px solid var(--line);border-radius:11px;padding:18px;background:#fff}
+.reading-hub-options h3{font-size:16px;margin:0 0 7px}
+.reading-hub-options p{font-size:13px;line-height:1.5;color:var(--muted);margin:0 0 15px}
+.reading-hub-options .button{min-height:44px;width:100%;white-space:normal;text-align:center}
+.reading-hub-projects{display:grid;gap:7px;margin-top:8px}
+.reading-hub-project{width:100%;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:14px;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#f8faf7;font-size:13px}
+.reading-hub-project:hover{border-color:#86af92}
+.reading-hub-projects .muted{margin:0}
+[data-theme=dark] .reading-hub-options section{background:#242a26}
+[data-theme=dark] .reading-hub-project{background:#1c251f}
+/* La synchronisation est une action, avec un état secondaire lisible. */
+.workbench button#save-state:not(.save-local){min-height:44px;max-width:none;border-color:var(--line);background:#f0f5ee;color:inherit;padding:5px 11px}
+.workbench button#save-state:not(.save-local):hover,.workbench button#save-state:not(.save-local):focus-visible{border-color:#83aa8d;background:#e3efdf}
+.workbench #save-state .save-action{font-size:13px;font-weight:700;white-space:nowrap}
+.workbench #save-state .save-detail{max-width:160px;font-size:11px;line-height:1.2;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workbench #save-state.save-local .save-action{font-size:12px;font-weight:500}
+.workbench #save-state.save-local .save-detail{display:none}
+[data-theme=dark] .workbench button#save-state:not(.save-local){background:#26382d}
+[data-theme=dark] .workbench button#save-state:not(.save-local):hover,[data-theme=dark] .workbench button#save-state:not(.save-local):focus-visible{background:#344b3a}
+@media(max-width:1100px){.workbench #save-state .save-detail{display:none}}
+@media(max-width:600px){.workbench .reading-hub-button{min-height:44px;padding-inline:11px}.workbench button#save-state:not(.save-local){width:auto;min-width:44px;padding:5px 8px}.workbench #save-state .save-action{font-size:12px}.workbench #save-state.save-local{width:auto}.reading-hub-options section{padding:15px}}
