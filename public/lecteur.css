@@ -10,14 +10,14 @@ button:disabled { opacity:.35; cursor:default; }
 .primary:hover { background:#c4daa8; }
 button[aria-pressed=true] { background:#3b5540; border-color:#94b69b; color:#edf1e7; }
 button:focus-visible, a:focus-visible { outline:3px solid #b6ce98; outline-offset:3px; }
-header { display:flex; align-items:center; justify-content:space-between; padding:15px 24px; border-bottom:1px solid #2c352d; font-size:12px; flex-shrink:0; }
-header a { flex-shrink:0; color:#dce5d6; text-decoration:none; background:#202c23; padding:12px 17px; border-radius:7px; }
+header { position:relative; z-index:3; -webkit-transform:translateZ(0); display:flex; align-items:center; justify-content:space-between; min-height:74px; padding:15px 24px; border-bottom:1px solid #2c352d; background:#101713; font-size:12px; flex-shrink:0; }
+header a { display:flex; align-items:center; min-height:44px; flex-shrink:0; color:#dce5d6; text-decoration:none; background:#202c23; padding:10px 17px; border-radius:7px; }
 header #title { margin:0 14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .badge { flex-shrink:0; color:#81917d; font-size:9px; letter-spacing:1px; }
 .reader-header-actions { display:flex; align-items:center; gap:12px; flex-shrink:0; }
 #refresh-reader { min-height:40px; padding:7px 12px; }
 @media(max-width:620px) { .reader-header-actions { gap:7px; } #refresh-reader { padding:7px 9px; } #refresh-reader span, .reader-header-actions .badge { display:none; } }
-#viewport { overflow-y:auto; flex:1; min-height:0; position:relative; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+#viewport { overflow-y:auto; flex:1; min-height:0; position:relative; z-index:0; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 #viewport::-webkit-scrollbar { display:none; }
 #text-track { overflow:hidden; }
 #text { max-width:1000px; margin:0 auto; padding:24vh 9% 70vh; line-height:1.65; word-wrap:break-word; }
@@ -99,7 +99,7 @@ select:focus { outline:2px solid #b6ce98; outline-offset:2px; }
  .display-section > .field-label { display:none; }
 }
 @media(max-width:640px) {
- header { padding:12px; }
+ header { min-height:68px; padding:12px; }
  .badge { display:none; }
  #text { padding-left:12%; padding-right:12%; }
  .guide { left:8px; }
