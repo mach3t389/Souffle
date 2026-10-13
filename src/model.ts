@@ -28,6 +28,26 @@ export function snapshot(script: Script) {
  if (!last || JSON.stringify(last.content) !== JSON.stringify(script.content) || last.title !== script.title) script.versions.push({id:uid(),at:Date.now(),title:script.title,content:cloneJson(script.content)})
  script.versions = script.versions.slice(-30)
 }
+export function sameDocuments(a: Workspace, b: Workspace) {
+ const shape = (workspace: Workspace) => workspace.projects.map(project => ({id:project.id,name:project.name,deletedAt:project.deletedAt,scripts:project.scripts.map(script => ({id:script.id,title:script.title,deletedAt:script.deletedAt,content:script.content}))}))
+ return JSON.stringify(shape(a)) === JSON.stringify(shape(b))
+}
+export function reconcileEquivalent(local: Workspace, remote: Workspace) {
+ if (!sameDocuments(local, remote)) throw new Error('Les documents ne sont pas identiques.')
+ const merged = cloneJson(remote)
+ for (const project of merged.projects) {
+  const localProject = local.projects.find(item => item.id === project.id)!
+  for (const script of project.scripts) {
+   const localScript = localProject.scripts.find(item => item.id === script.id)!
+   const byId = new Map(script.versions.map(version => [version.id, version]))
+   localScript.versions.forEach(version => { if (!byId.has(version.id)) byId.set(version.id, cloneJson(version)) })
+   script.versions = Array.from(byId.values()).sort((a,b) => a.at-b.at).slice(-30)
+  }
+ }
+ merged.selectedProject = local.selectedProject
+ merged.selectedScript = local.selectedScript
+ return {workspace:merged, changed:JSON.stringify(merged.projects)!==JSON.stringify(remote.projects)}
+}
 export function copyProjects(projects: Project[]) { return projects.map(p => ({...p,id:uid(),scripts:p.scripts.map(s => ({...s,id:uid(),content:blockIds(s.content,true),versions:[]}))})) }
 
 // Keep the cloud version intact and expose differing local drafts as separate projects.

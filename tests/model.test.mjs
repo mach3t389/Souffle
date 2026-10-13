@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {blockIds,snapshot,validateWorkspace,copyProjects,recoverConflict} from '../src/model.ts'
+import {blockIds,snapshot,validateWorkspace,copyProjects,recoverConflict,sameDocuments,reconcileEquivalent} from '../src/model.ts'
 test('conflict recovery preserves cloud and local history without hiding drafts',()=>{
  const content={type:'doc',content:[{type:'paragraph',attrs:{id:'line'},content:[{type:'text',text:'Brouillon local'}]}]}
  const local={schemaVersion:2,settings:{size:54},projects:[{id:'p',name:'Projet',scripts:[{id:'s',title:'Essai',content,updated:2,revision:2,deletedAt:123,versions:[{id:'v',at:1,title:'Ancienne',content}]}]}]}
@@ -34,4 +34,19 @@ test('invalid backup content and invalid history are rejected',()=>{
  assert.equal(validateWorkspace(valid),true)
  valid.projects[0].scripts[0].versions=[{id:'v',title:'Bad',at:0,content:{type:'doc',content:[null]}}]
  assert.equal(validateWorkspace(valid),false)
+})
+
+test('identical documents do not conflict over reader settings, selection, or history',()=>{
+ const doc={type:'doc',content:[{type:'paragraph',content:[{type:'text',text:'Bonjour'}]}]}
+ const script={id:'s',title:'Texte',content:doc,updated:1,revision:1,versions:[]}
+ const remote={schemaVersion:2,projects:[{id:'p',name:'Projet',scripts:[script]}],settings:{size:54},selectedProject:'p'}
+ const local=structuredClone(remote);local.settings.size=72;local.selectedScript='s';local.projects[0].scripts[0].updated=2;local.projects[0].scripts[0].versions=[{id:'history',at:2,title:'Texte',content:doc}]
+ assert.equal(sameDocuments(local,remote),true)
+ const merged=reconcileEquivalent(local,remote)
+ assert.equal(merged.changed,true);assert.equal(merged.workspace.projects[0].scripts[0].versions.length,1)
+ assert.equal(merged.workspace.selectedScript,'s')
+ assert.equal(merged.workspace.settings.size,54)
+ const changed=structuredClone(local);changed.projects[0].scripts[0].content.content[0].content[0].text='Autre texte'
+ assert.equal(sameDocuments(changed,remote),false)
+ assert.throws(()=>reconcileEquivalent(changed,remote))
 })

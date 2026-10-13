@@ -4,7 +4,7 @@ import { TextStyleKit } from '@tiptap/extension-text-style'
 import TextAlign from '@tiptap/extension-text-align'
 import UniqueID from '@tiptap/extension-unique-id'
 import type { User } from '@supabase/supabase-js'
-import { blockIds, cloneJson, copyProjects, defaults, recoverConflict, snapshot, uid, validateWorkspace, type Project, type Script, type Workspace } from './model'
+import { blockIds, cloneJson, copyProjects, defaults, recoverConflict, reconcileEquivalent, sameDocuments, snapshot, uid, validateWorkspace, type Project, type Script, type Workspace } from './model'
 import { cloud, cloudKey, cloudUrl, fetchWorkspace, saveWorkspace } from './cloud'
 import './style.css'
 import './theme.css'
@@ -60,7 +60,7 @@ function store(markDirty=true){
  if(conflict||storageError){status();return false}
  try{
   const current=localStorage.getItem(scope)
-  if(current!==lastStored){conflict=true;toast('Ce projet a changé dans un autre onglet. Résous le conflit avant de continuer.');renderConflict();return false}
+  if(current!==lastStored){try{const other=current?JSON.parse(current) as Envelope:null;if(other&&validateWorkspace(other.workspace)&&sameDocuments(workspace,other.workspace)){lastStored=current;baseRevision=Math.max(baseRevision,other.baseRevision||0)}else{conflict=true;toast('Ce projet a changé dans un autre onglet. Résous le conflit avant de continuer.');renderConflict();return false}}catch{conflict=true;renderConflict();return false}}
   lastStored=JSON.stringify({workspace,baseRevision,dirty} satisfies Envelope);localStorage.setItem(scope,lastStored);status()
   return true
  }catch{storageError=true;toast('Sauvegarde impossible. Exporte tes projets pour conserver ton travail.');status();return false}
@@ -74,14 +74,28 @@ async function synchronize(){
  if(!navigator.onLine){cloudStatus='Hors connexion · brouillon local';status();return}
  const mine=generation,owner=user.id,serial=editSerial;syncing=true;cloudStatus='Synchronisation…';status()
  try{
-  if(dirty){const result=await saveWorkspace(cloneJson(workspace),baseRevision,owner);if(mine!==generation)return;if(result.conflict){remoteConflict=await fetchWorkspace(owner);conflict=true;renderConflict();throw new Error('Une autre version existe dans le cloud.')}baseRevision=result.revision;if(serial===editSerial)dirty=false;store(false)}
+  if(dirty){const result=await saveWorkspace(cloneJson(workspace),baseRevision,owner);if(mine!==generation)return;if(result.conflict){const latest=await fetchWorkspace(owner);if(latest&&validateWorkspace(latest.data)&&sameDocuments(workspace,latest.data)){const merged=reconcileEquivalent(workspace,latest.data);workspace=merged.workspace;baseRevision=latest.revision;dirty=merged.changed;remoteConflict=null;cloudStatus=dirty?'Historique local à synchroniser':'Synchronisé';store(false);render();return}remoteConflict=latest;conflict=true;renderConflict();throw new Error('Une autre version existe dans le cloud.')}baseRevision=result.revision;if(serial===editSerial)dirty=false;store(false)}
   else{const remote=await fetchWorkspace(owner);if(mine!==generation)return;if(remote&&remote.revision!==baseRevision){if(!validateWorkspace(remote.data))throw new Error('Données cloud invalides.');if(serial!==editSerial||dirty)return;workspace=remote.data;baseRevision=remote.revision;store(false);render()}}
   cloudStatus=dirty?'Modifications locales':'Synchronisé';status()
  }catch(e){if(mine===generation){cloudStatus=navigator.onLine?`Cloud indisponible · brouillon local`:'Hors connexion · brouillon local';status();if(conflict)toast(message(e))}}
  finally{syncing=false;status()}
 }
 function message(e:unknown){return e instanceof Error?e.message:typeof (e as any)?.message==='string'?(e as any).message:'Une erreur est survenue. Réessaie.'}
-function renderConflict(){editor?.setEditable(!conflict && !changingAccount);const b=document.querySelector('#conflict-banner');if(b){b.innerHTML=conflict?'<strong>Une autre version a été enregistrée.</strong><span>Ton brouillon reste sur cet appareil. « Conserver les deux » le rendra visible dans un projet séparé et tentera de le synchroniser.</span><button id="keep-both" class="button secondary">Conserver les deux</button><button id="export-conflict" class="button secondary">Exporter mon brouillon</button>':'';const both=document.querySelector<HTMLButtonElement>('#keep-both');if(both)both.onclick=resolveConflict;const exportButton=document.querySelector<HTMLButtonElement>('#export-conflict');if(exportButton)exportButton.onclick=exportWorkspace}status()}
+function renderConflict(){editor?.setEditable(!conflict && !changingAccount);const b=document.querySelector('#conflict-banner');if(b){b.innerHTML=conflict?'<strong>Deux versions du projet diffèrent.</strong><span>Ton brouillon reste sur cet appareil. Tu peux conserver les deux versions ou reprendre celle du cloud; une copie locale de ton brouillon sera alors gardée dans Mon compte.</span><button id="keep-both" class="button secondary">Conserver les deux</button><button id="export-conflict" class="button secondary">Exporter mon brouillon</button><button id="use-cloud" class="button secondary">Utiliser la version cloud</button>':'';const both=document.querySelector<HTMLButtonElement>('#keep-both');if(both)both.onclick=resolveConflict;const exportButton=document.querySelector<HTMLButtonElement>('#export-conflict');if(exportButton)exportButton.onclick=exportWorkspace;const useCloud=document.querySelector<HTMLButtonElement>('#use-cloud');if(useCloud)useCloud.onclick=()=>void useCloudVersion()}status()}
+async function useCloudVersion(){
+ try{
+  if(!user)throw new Error('Connecte-toi pour charger la version cloud.')
+  const remote=await fetchWorkspace(user.id)
+  if(!remote||!validateWorkspace(remote.data))throw new Error('Version cloud indisponible.')
+  if(localStorage.getItem(scope)!==lastStored)throw new Error('Le brouillon a changé dans un autre onglet. Ferme cet onglet ou exporte ton brouillon.')
+  const backupKey=`souffle.conflict.backup.${user.id}`
+  localStorage.setItem(backupKey,JSON.stringify({at:Date.now(),workspace:cloneJson(workspace)}))
+  const previous={workspace,baseRevision,dirty,conflict,remoteConflict}
+  workspace=remote.data;baseRevision=remote.revision;dirty=false;conflict=false;remoteConflict=null;cloudStatus='Synchronisé'
+  if(!store(false)){workspace=previous.workspace;baseRevision=previous.baseRevision;dirty=previous.dirty;conflict=previous.conflict;remoteConflict=previous.remoteConflict;renderConflict();return}
+  render();toast('Version cloud chargée. Ton brouillon précédent reste dans Mon compte.')
+ }catch(e){toast('Impossible de remplacer le brouillon local : '+message(e))}
+}
 async function resolveConflict(){
  try{
   if(!user)throw new Error('Connecte-toi pour résoudre le conflit.')
@@ -170,7 +184,7 @@ const wideViewport=window.matchMedia('(min-width:1101px)')
 const onWideViewport=(e:MediaQueryListEvent|MediaQueryList)=>{if(e.matches)closeScriptPicker()}
 if(wideViewport.addEventListener)wideViewport.addEventListener('change',onWideViewport)
 else wideViewport.addListener(onWideViewport)
-function chooseScript(id:string){flush();const current=activeScript();if(current)snapshot(current);workspace.selectedScript=id;store();render()}
+function chooseScript(id:string){if(!flush())return;workspace.selectedScript=id;store(false);render()}
 function setupEditor(s:Script){
  editor=new Editor({element:$('#editor'),extensions:extensions(),content:s.content,editorProps:{attributes:{'aria-label':'Contenu du script',role:'textbox','aria-multiline':'true'}},onUpdate:()=>{if(conflict)return;const now=Date.now();if(!s.versions.length||now-s.versions[s.versions.length-1].at>60000)snapshot(s);s.content=blockIds(editor!.getJSON());s.updated=now;s.revision++;dirty=true;editSerial++;if(user)cloudStatus='Modifications locales';window.clearTimeout(timer);timer=window.setTimeout(()=>store(false),500);status();stats()},onSelectionUpdate:updateToolbar})
  $('#start').onclick=openReader
@@ -197,7 +211,7 @@ async function importFile(){const file=$<HTMLInputElement>('#file-input').files?
 function download(data:string,name:string){const url=URL.createObjectURL(new Blob([data],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function exportWorkspace(){capture();download(JSON.stringify(workspace,null,2),'souffle-sauvegarde.json')}
 async function restore(){const file=$<HTMLInputElement>('#backup-input').files?.[0];if(!file)return;try{if(file.size>20*1024*1024)throw new Error('Sauvegarde trop volumineuse.');const restored=migrate(JSON.parse(await file.text()));mutate(()=>workspace.projects.push(...copyProjects(restored.projects)));toast('Projets ajoutés à la bibliothèque.');page='library';render()}catch(e){toast(message(e))}}
-function openReader(){capture();const s=activeScript()!;snapshot(s);store();try{localStorage.setItem('souffle.reader.v1',JSON.stringify({title:s.title,html:editor!.getHTML(),settings:workspace.settings,workspaceKey:scope,startBlockId:readingStart?.scriptId===s.id?readingStart.blockId:undefined}));window.location.assign('/lecteur.html')}catch{toast('Impossible de préparer la lecture. Exporte une sauvegarde.')}}
+function openReader(){capture();const s=activeScript()!;if(!store(false))return;try{const previous=JSON.parse(localStorage.getItem('souffle.reader.v1')||'null');let remembered=null;try{remembered=JSON.parse(localStorage.getItem('souffle.reader.settings.v1.'+scope)||'null')}catch{}const settings=remembered&&typeof remembered==='object'?{...workspace.settings,...remembered}:previous?.workspaceKey===scope&&previous.settings?{...workspace.settings,...previous.settings}:workspace.settings;localStorage.setItem('souffle.reader.v1',JSON.stringify({title:s.title,html:editor!.getHTML(),settings,workspaceKey:scope,startBlockId:readingStart?.scriptId===s.id?readingStart.blockId:undefined}));window.location.assign('/lecteur.html')}catch{toast('Impossible de préparer la lecture. Exporte une sauvegarde.')}}
 
 function authView(){
  editor?.destroy();editor=undefined;const title='Se connecter'
@@ -210,8 +224,10 @@ function authView(){
 }
 function showAccount(){
  if(!user){location.hash='connexion';return}
- dialog('Mon compte',`<p>${esc(user.email||'Compte connecté')}</p><p class="muted">${esc(cloudStatus||'Connecté')}</p><div class="action-list"><button id="sync-now">Synchroniser maintenant</button><button id="import-local">Importer mes projets de cet appareil</button><button id="change-password">Changer mon mot de passe</button><button id="logout" class="danger">Se déconnecter</button></div><p id="account-message" role="status"></p>`)
+ let conflictBackup:string|null=null;try{conflictBackup=localStorage.getItem(`souffle.conflict.backup.${user.id}`)}catch{}
+ dialog('Mon compte',`<p>${esc(user.email||'Compte connecté')}</p><p class="muted">${esc(cloudStatus||'Connecté')}</p><div class="action-list"><button id="sync-now">Synchroniser maintenant</button><button id="import-local">Importer mes projets de cet appareil</button>${conflictBackup?'<button id="download-conflict-backup">Télécharger le brouillon précédent</button>':''}<button id="change-password">Changer mon mot de passe</button><button id="logout" class="danger">Se déconnecter</button></div><p id="account-message" role="status"></p>`)
  $('#sync-now').onclick=()=>{flush();void synchronize().then(()=>$('#account-message').textContent=cloudStatus)}
+ const downloadBackup=document.querySelector<HTMLButtonElement>('#download-conflict-backup');if(downloadBackup)downloadBackup.onclick=()=>{try{const saved=JSON.parse(conflictBackup!);if(!validateWorkspace(saved.workspace))throw new Error('Sauvegarde illisible.');download(JSON.stringify(saved.workspace,null,2),'souffle-brouillon-precedent.json')}catch(e){$('#account-message').textContent=message(e)}}
  $('#import-local').onclick=()=>{try{const raw=localStorage.getItem('souffle.workspace.v2.local');const data=raw?JSON.parse(raw).workspace:migrate(JSON.parse(localStorage.getItem('souffle.workspace.v1')||'null'));if(!validateWorkspace(data))throw new Error('Aucun projet local à importer.');const marker=`souffle.imported.${user!.id}`;if(localStorage.getItem(marker))throw new Error('Les projets locaux ont déjà été importés. Utilise Restaurer pour importer une autre sauvegarde.');workspace.projects.push(...copyProjects(data.projects));if(store()){localStorage.setItem(marker,'1');render();toast('Projets locaux copiés dans ton compte.')}}catch(e){$('#account-message').textContent=message(e)}}
  $('#change-password').onclick=()=>{
   $<HTMLDialogElement>('#dialog').close()
@@ -223,12 +239,22 @@ function showAccount(){
 async function switchAccount(next:User|null){
  if(user?.id===next?.id)return
  flush();generation++;const mine=generation;changingAccount=true;try{localStorage.removeItem('souffle.reader.v1')}catch{}user=next;scope=next?`souffle.workspace.v2.${next.id}`:'souffle.workspace.v2.local';conflict=false;remoteConflict=null;storageError=false;workspace=empty();baseRevision=0;dirty=false;cloudStatus='Chargement…'
- try{loadLocal();if(next){const remote=await fetchWorkspace(next.id);if(mine!==generation)return;if(remote){if(!validateWorkspace(remote.data))throw new Error('Données cloud invalides.');if(dirty&&baseRevision!==remote.revision){conflict=true;remoteConflict=remote}else if(!dirty){workspace=remote.data;baseRevision=remote.revision}}cloudStatus=dirty?'Modifications locales':'Synchronisé'}}catch(e){cloudStatus='Cloud indisponible · brouillon local';notice=message(e)}finally{if(mine===generation){changingAccount=false;store(false);page='library';route()}}
+ try{loadLocal();if(next){const remote=await fetchWorkspace(next.id);if(mine!==generation)return;if(remote){if(!validateWorkspace(remote.data))throw new Error('Données cloud invalides.');if(dirty&&baseRevision!==remote.revision){if(sameDocuments(workspace,remote.data)){const merged=reconcileEquivalent(workspace,remote.data);workspace=merged.workspace;baseRevision=remote.revision;dirty=merged.changed}else{conflict=true;remoteConflict=remote}}else if(!dirty){workspace=remote.data;baseRevision=remote.revision}}cloudStatus=dirty?'Modifications locales':'Synchronisé'}}catch(e){cloudStatus='Cloud indisponible · brouillon local';notice=message(e)}finally{if(mine===generation){changingAccount=false;store(false);page='library';route()}}
 }
 function route(){const hash=location.hash.slice(1);if(authRequired&&(!authLoaded||!user)){authView();return}if(hash==='connexion'&&!user)authView();else render()}
 window.addEventListener('hashchange',()=>{authMessage='';authError=false;route()})
 window.addEventListener('beforeunload',()=>{if(!authRequired||user)flush()});window.addEventListener('online',()=>{cloudStatus=dirty?'Connexion rétablie · synchroniser':'Synchronisé';status()});window.addEventListener('offline',()=>{cloudStatus='Hors connexion · brouillon local';status()})
-window.addEventListener('storage',e=>{if(e.key===scope&&e.newValue!==lastStored){conflict=true;editor?.setEditable(false);renderConflict()}})
+window.addEventListener('storage',e=>{
+ if(e.key!==scope||e.newValue===lastStored)return
+ try{
+  const incoming=e.newValue?JSON.parse(e.newValue) as Envelope:null
+  if(incoming&&validateWorkspace(incoming.workspace)){
+   if(sameDocuments(workspace,incoming.workspace)){const merged=reconcileEquivalent(workspace,incoming.workspace);workspace=merged.workspace;baseRevision=Math.max(baseRevision,incoming.baseRevision||0);dirty=dirty||merged.changed;lastStored=e.newValue;if(!dirty&&incoming.dirty)store(false);render();return}
+   if(!dirty){workspace=incoming.workspace;baseRevision=incoming.baseRevision||0;dirty=incoming.dirty===true;lastStored=e.newValue;render();return}
+  }
+ }catch{}
+ conflict=true;editor?.setEditable(false);renderConflict()
+})
 const narrowViewport=window.matchMedia('(max-width:850px)')
 const onNarrowViewport=(event:MediaQueryListEvent|MediaQueryList)=>{if(event.matches&&!collapsed){if(document.querySelector('.workbench'))toggleMenu(true);else collapsed=true}}
 if(narrowViewport.addEventListener)narrowViewport.addEventListener('change',onNarrowViewport)
@@ -259,7 +285,7 @@ function joinProjectReader(){
 async function remoteDialog(s:Script){
  if(!cloud||!user){dialog('Télécommande','<p>Connecte ton compte Supabase pour associer un appareil à une session.</p><a class="button primary" href="#connexion">Se connecter</a>');return}
  const project=activeProject()!
- capture();snapshot(s);store()
+ capture();if(!store(false))return
  const html=editor!.getHTML()
  const blocks=Array.from(editor!.view.dom.querySelectorAll<HTMLElement>('p,h1,h2,h3')).filter(node=>node.dataset.id)
  const d=dialog('Télécommande',`<div class="remote-intro" id="remote-intro"><p>Préparation du code pour le projet <strong>${esc(project.name)}</strong>…</p><button id="create-session" class="button primary" hidden>Réessayer</button></div><div id="remote-content" hidden></div><p id="remote-message" role="status" aria-live="polite"></p>`)
