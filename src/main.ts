@@ -7,6 +7,7 @@ import type { User } from '@supabase/supabase-js'
 import { blockIds, cloneJson, copyProjects, defaults, recoverConflict, reconcileEquivalent, sameDocuments, snapshot, uid, validateWorkspace, type Project, type Script, type Workspace } from './model'
 import { cloud, cloudKey, cloudUrl, fetchWorkspace, saveWorkspace } from './cloud'
 import { openLegacyDialog } from './legacy-dialog'
+import { readablePastedHtml } from './paste'
 import './style.css'
 import './theme.css'
 import './workspace.css'
@@ -28,17 +29,6 @@ let authLoaded=!cloud&&!import.meta.env.PROD
 let remotePoll=0
 let readingStart:{scriptId:string;blockId:string}|null=null
 const app=$('#app')
-function readablePastedHtml(html:string){
- const template=document.createElement('template');template.innerHTML=html
- template.content.querySelectorAll<HTMLElement>('[style],font[size],small').forEach(node=>{
-  const legacy=node.tagName==='FONT'?node.getAttribute('size'):null
-  if(legacy){const sizes=[0,10,13,16,18,24,32,48],n=Number(legacy);if(Number.isInteger(n)&&n>=1&&n<=7){node.style.fontSize=`${Math.max(18,sizes[n])}px`;node.removeAttribute('size')}}
-  const value=node.style.fontSize.trim().toLowerCase()
-  if(value){const match=/^(\d+(?:\.\d+)?)(px|pt|rem|em|%)$/.exec(value);if(match){const amount=Number(match[1]),unit=match[2],pixels=unit==='pt'?amount*4/3:unit==='rem'||unit==='em'?amount*18:unit==='%'?amount*18/100:amount;if(pixels<18)node.style.fontSize='18px'}else if(/^(?:xx-small|x-small|small|smaller|medium)$/.test(value))node.style.fontSize='18px'}
-  else if(node.tagName==='SMALL')node.style.fontSize='18px'
- })
- return template.innerHTML
-}
 function parseContent(html:string) { return blockIds(generateJSON(readablePastedHtml(html),extensions())) }
 function migrate(value:any):Workspace {
  if(validateWorkspace(value))return cloneJson(value)
