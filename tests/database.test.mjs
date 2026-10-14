@@ -119,12 +119,14 @@ test('project code is owned, rate limited, and switches scripts without a new se
   assert.match(joined.token,/^[a-f0-9]{64}$/);assert.equal(joined.id,session.id)
   const next={html:'<p>Deuxième</p>',title:'Deuxième',settings:{},scriptId:'script-b'}
   assert.equal((await db.query('select public.switch_project_reading_script($1,$2,$3) as sequence',[session.id,'script-b',JSON.stringify(next)])).rows[0].sequence,1)
+  const revised={...next,html:'<p>Deuxième corrigé</p>',revision:2}
+  assert.equal((await db.query('select public.switch_project_reading_script($1,$2,$3) as sequence',[session.id,'script-b',JSON.stringify(revised)])).rows[0].sequence,2)
  })
  await as('anon',null,async()=>{
   await assert.rejects(db.query('select public.join_project_reading_session($1)',[session.code]))
   await assert.rejects(db.query('select public.switch_project_reading_script($1,$2,$3)',[session.id,'script-c','{}']))
   const state=(await db.query('select public.poll_reading_session($1,$2,$3,$4) as result',[joined.token,-1,'paused',true])).rows[0].result
-  assert.equal(state.snapshot.title,'Deuxième');assert.equal(state.command.action,'reload')
+  assert.equal(state.snapshot.html,'<p>Deuxième corrigé</p>');assert.equal(state.command.action,'reload')
  })
  await as('authenticated',alice,async()=>{
   const wrong=session.code==='000000'?'000001':'000000'
