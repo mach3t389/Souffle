@@ -2,9 +2,9 @@ import type { JSONContent } from '@tiptap/core'
 export type Version = { id: string; at: number; title: string; content: JSONContent }
 export type Script = { id: string; title: string; content: JSONContent; updated: number; revision: number; deletedAt?: number; versions: Version[] }
 export type Project = { id: string; name: string; scripts: Script[]; deletedAt?: number }
-export type Settings = { size: number; speed: number; countdown: number; mirrorX: boolean; mirrorY: boolean; proportional: boolean; font: string }
+export type Settings = { size: number; speed: number; countdown: number; mirrorX: boolean; mirrorY: boolean; proportional: boolean; font: string; lineSpacing: number }
 export type Workspace = { schemaVersion: 2; projects: Project[]; settings: Settings; selectedProject?: string; selectedScript?: string }
-export const defaults: Settings = { size:54,speed:35,countdown:3,mirrorX:false,mirrorY:false,proportional:true,font:'sans-serif' }
+export const defaults: Settings = { size:54,speed:35,countdown:3,mirrorX:false,mirrorY:false,proportional:true,font:'sans-serif',lineSpacing:1.4 }
 // Workspace and document nodes are plain JSON. structuredClone is absent on iOS 12.
 export const cloneJson = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
 export const uid = () => {

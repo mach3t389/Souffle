@@ -11,7 +11,7 @@
  <meta name="apple-mobile-web-app-title" content="Souffle">
  <meta name="theme-color" content="#101713">
  <title>Souffle — Lecture</title>
- <link rel="stylesheet" href="/lecteur.css?v=2">
+ <link rel="stylesheet" href="/lecteur.css?v=3">
 </head>
 <body>
  <header id="reader-header">
@@ -63,6 +63,7 @@
       <select id="font"><option value="sans-serif">Sans sérif</option><option value="Georgia">Georgia</option><option value="original">Originale</option></select>
      </label>
     </div>
+    <label class="control-field line-spacing-control" for="line-spacing"><span class="field-label">Interligne</span><select id="line-spacing"><option value="1.2">Serré · 1,2</option><option value="1.4">Normal · 1,4</option><option value="1.6">Aéré · 1,6</option><option value="1.8">Très aéré · 1,8</option><option value="2">Double · 2</option></select></label>
     <label class="check-control"><input id="proportional" type="checkbox"><span>Tailles relatives du script</span></label>
    </section>
    <section class="settings-section display-section" aria-labelledby="display-heading">
@@ -84,6 +85,6 @@
   </button>
   <button id="show-settings" aria-label="Afficher les réglages" title="Afficher les réglages" aria-expanded="false" aria-controls="reader-settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 15 6-6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
  </div>
- <script src="/lecteur-gestures.js"></script><script src="/lecteur-motion.js"></script><script src="/lecteur.js"></script>
+ <script src="/lecteur-gestures.js"></script><script src="/lecteur-motion.js"></script><script src="/lecteur.js?v=2"></script>
 </body>
 </html>
