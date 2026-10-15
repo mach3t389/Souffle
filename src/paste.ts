@@ -1,3 +1,5 @@
+import type { JSONContent } from '@tiptap/core'
+
 type FontSample = { size: number; weight: number; heading: boolean }
 
 const legacySizes = [0, 10, 13, 16, 18, 24, 32, 48]
@@ -75,4 +77,19 @@ export function readablePastedHtml(html: string): string {
   if (node.tagName === 'FONT') node.removeAttribute('size')
  }
  return template.innerHTML
+}
+// Rend lisibles les anciens scripts Word sans enregistrer un changement à leur ouverture.
+export function readableDocument(content: JSONContent): JSONContent {
+ const copy: JSONContent = JSON.parse(JSON.stringify(content))
+ function visit(node: JSONContent): void {
+  for (const mark of node.marks || []) {
+   if (mark.type !== 'textStyle' || typeof mark.attrs?.fontSize !== 'string') continue
+   const match = /^(\d+(?:\.\d+)?)(px|pt)$/.exec(mark.attrs.fontSize.trim().toLowerCase())
+   if (match && Number(match[1]) * (match[2] === 'pt' ? 4 / 3 : 1) < 18)
+    mark.attrs.fontSize = '18px'
+  }
+  node.content?.forEach(visit)
+ }
+ visit(copy)
+ return copy
 }

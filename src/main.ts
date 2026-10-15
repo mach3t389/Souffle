@@ -7,7 +7,7 @@ import type { User } from '@supabase/supabase-js'
 import { blockIds, cloneJson, copyProjects, defaults, recoverConflict, reconcileEquivalent, sameDocuments, snapshot, uid, validateWorkspace, type Project, type Script, type Workspace } from './model'
 import { cloud, cloudKey, cloudUrl, fetchWorkspace, saveWorkspace } from './cloud'
 import { openLegacyDialog } from './legacy-dialog'
-import { readablePastedHtml } from './paste'
+import { readableDocument, readablePastedHtml } from './paste'
 import './style.css'
 import './theme.css'
 import './workspace.css'
@@ -189,7 +189,7 @@ if(wideViewport.addEventListener)wideViewport.addEventListener('change',onWideVi
 else wideViewport.addListener(onWideViewport)
 function chooseScript(id:string){if(!flush())return;workspace.selectedScript=id;store(false);render()}
 function setupEditor(s:Script){
- editor=new Editor({element:$('#editor'),extensions:extensions(),content:s.content,editorProps:{attributes:{'aria-label':'Contenu du script',role:'textbox','aria-multiline':'true'},transformPastedHTML:readablePastedHtml},onUpdate:()=>{if(conflict)return;const now=Date.now();if(!s.versions.length||now-s.versions[s.versions.length-1].at>60000)snapshot(s);s.content=blockIds(editor!.getJSON());s.updated=now;s.revision++;dirty=true;editSerial++;if(user)cloudStatus='Modifications locales';window.clearTimeout(timer);timer=window.setTimeout(()=>store(false),500);status();stats()},onSelectionUpdate:updateToolbar})
+ editor=new Editor({element:$('#editor'),extensions:extensions(),content:readableDocument(s.content),editorProps:{attributes:{'aria-label':'Contenu du script',role:'textbox','aria-multiline':'true'},transformPastedHTML:readablePastedHtml},onUpdate:()=>{if(conflict)return;const now=Date.now();if(!s.versions.length||now-s.versions[s.versions.length-1].at>60000)snapshot(s);s.content=blockIds(editor!.getJSON());s.updated=now;s.revision++;dirty=true;editSerial++;if(user)cloudStatus='Modifications locales';window.clearTimeout(timer);timer=window.setTimeout(()=>store(false),500);status();stats()},onSelectionUpdate:updateToolbar})
  $('#start').onclick=openReader
  document.querySelectorAll<HTMLButtonElement>('[data-format]').forEach(b=>{b.onmousedown=e=>e.preventDefault();b.onclick=()=>{const c=editor!.chain().focus();switch(b.dataset.format){case'bold':c.toggleBold().run();break;case'italic':c.toggleItalic().run();break;case'underline':c.toggleUnderline().run();break;case'bulletList':c.toggleBulletList().run();break;case'undo':c.undo().run();break;case'redo':c.redo().run();break}updateToolbar()}})
  $('#block').onchange=()=>{const v=($('#block') as HTMLSelectElement).value;v==='p'?editor!.chain().focus().setParagraph().run():editor!.chain().focus().setHeading({level:Number(v.slice(1)) as 1|2|3}).run()}
