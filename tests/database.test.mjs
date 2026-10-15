@@ -8,7 +8,7 @@ const alice='11111111-1111-4111-8111-111111111111',bob='22222222-2222-4222-8222-
 const payload={schemaVersion:2,projects:[],settings:{}}
 before(async()=>{
  await db.exec(`create schema auth;create schema extensions;create role anon;create role authenticated;create table auth.users(id uuid primary key);insert into auth.users values('${alice}'),('${bob}');create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema public,auth to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;`)
- for(const name of ['001_workspace.sql','002_reading_sessions.sql','20261013045312_project_pairing.sql'])await db.exec(await readFile(new URL('../supabase/migrations/'+name,import.meta.url),'utf8'))
+ for(const name of ['001_workspace.sql','002_reading_sessions.sql','20261013045312_project_pairing.sql','20261015005105_reading_position_heartbeat.sql'])await db.exec(await readFile(new URL('../supabase/migrations/'+name,import.meta.url),'utf8'))
 })
 after(()=>db.close())
 async function as(role,id,action){await db.exec(`set role ${role};set request.jwt.claim.sub='${id||''}';`);try{return await action()}finally{await db.exec('reset role;reset request.jwt.claim.sub;')}}
@@ -51,6 +51,23 @@ test('reading sessions: private snapshot, commands, acknowledgments, revocation'
   await db.query('select public.revoke_reading_session($1)',[session.id])
  })
  await as('anon',null,async()=>{await assert.rejects(db.query('select public.poll_reading_session($1,1,$2,true)',[session.token,'paused']),/Session expired/)})
+})
+test('reader heartbeat reports its current passage without exposing another owner’s position',async()=>{
+ let session
+ await as('authenticated',alice,async()=>{
+  session=(await db.query('select public.create_reading_session($1) as result',[JSON.stringify({html:'<p data-id="p1">Bonjour</p>',title:'Repère',settings:{}})])).rows[0].result
+ })
+ await as('anon',null,async()=>{
+  await db.query('select public.poll_reading_session_v2($1,-1,$2,true,$3) as result',[session.token,'paused',JSON.stringify({blockId:'p1',fraction:.4})])
+  await assert.rejects(db.query('select public.poll_reading_session_v2($1,-1,$2,true,$3)',[session.token,'paused',JSON.stringify({blockId:'x'.repeat(101)})]),/Invalid request/)
+ })
+ await as('authenticated',alice,async()=>{
+  const position=(await db.query('select reader_position from public.reading_sessions where id=$1',[session.id])).rows[0].reader_position
+  assert.deepEqual(position,{blockId:'p1',fraction:.4})
+ })
+ await as('authenticated',bob,async()=>{
+  assert.equal((await db.query('select reader_position from public.reading_sessions where id=$1',[session.id])).rows.length,0)
+ })
 })
 test('a remote speed trial uses the existing play command without a schema change',async()=>{
  let session

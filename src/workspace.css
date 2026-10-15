@@ -280,6 +280,11 @@ dialog button:disabled,.auth-card button:disabled{opacity:.5;cursor:default}
 .remote-stage .remote-link-row input{margin:0;min-width:0;flex:1;padding:10px;font-size:12px}
 .remote-stage .remote-text-button{border:0;background:none;color:#c6dcbf;cursor:pointer;padding:12px 0;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
 .remote-stage .remote-preview-shell{display:flex;flex-direction:column;flex:1;min-height:150px;background:#101713}
+.remote-stage .remote-playhead{display:flex;align-items:center;gap:10px;min-width:0;padding:7px clamp(16px,3vw,34px);border-bottom:1px solid #354a3a;background:#1b3021;color:#dcebd5;font-size:12px}
+.remote-stage .remote-playhead[hidden]{display:none}
+.remote-stage .remote-playhead span{flex:none;color:#a9cda9}
+.remote-stage .remote-playhead strong{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:550}
+.remote-stage .remote-playhead button{flex:none;min-height:34px;padding:5px 10px;border:1px solid #5a795d;border-radius:7px;background:#29432e;color:#edf5e9;cursor:pointer}
 .remote-stage .remote-preview-head{display:flex;align-items:center;justify-content:space-between;gap:20px;flex:none;padding:10px clamp(16px,3vw,34px);border-bottom:1px solid #28352c}
 .remote-stage .remote-preview-head>div{display:flex;flex-direction:column;gap:3px}
 .remote-stage .remote-preview-head strong{font-size:13px}
@@ -287,7 +292,9 @@ dialog button:disabled,.auth-card button:disabled{opacity:.5;cursor:default}
 .remote-stage .remote-preview-head label{display:flex;align-items:center;gap:10px;margin:0;color:#b9c9b4;font-size:12px;min-width:0}
 .remote-stage .remote-preview-head select{width:clamp(150px,24vw,300px);margin:0;padding:9px 32px 9px 12px;min-height:38px;font-size:12px}
 .remote-stage .remote-preview{flex:1;min-height:0;box-sizing:border-box;overflow:auto;overscroll-behavior:contain;padding:48px max(24px,10vw) 0;scrollbar-color:#536554 #101713}
-.remote-stage .remote-preview article{max-width:1000px;margin:auto;color:#edf3e8;font-size:54px;line-height:1.4;word-break:normal;overflow-wrap:break-word;word-wrap:break-word;-webkit-hyphens:manual;hyphens:manual;transform-origin:center top}
+.remote-stage .remote-preview article{max-width:1000px;margin:auto;color:#edf3e8;font-size:54px;line-height:1.4;word-break:normal;overflow-wrap:normal;word-wrap:normal;transform-origin:center top}
+.remote-stage .remote-preview article .reader-word{display:inline-block;white-space:nowrap;vertical-align:baseline}
+.remote-stage .remote-preview article .reader-word-long{display:inline;white-space:normal;overflow-wrap:anywhere;word-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}
 .remote-stage .remote-preview article::after{content:'';display:block;height:60vh}
 .remote-stage .remote-preview article p{font-size:1em;line-height:inherit;margin:0 0 .75em}
 .remote-stage .remote-preview article h1{font-size:1.8em;line-height:1.25;margin:.5em 0 .9em}
@@ -296,6 +303,7 @@ dialog button:disabled,.auth-card button:disabled{opacity:.5;cursor:default}
 .remote-stage .remote-preview article:not(.remote-proportional) h1,.remote-stage .remote-preview article:not(.remote-proportional) h2,.remote-stage .remote-preview article:not(.remote-proportional) h3{font-size:1em}
 .remote-stage .remote-preview article [data-id]{cursor:pointer;border-radius:5px}
 .remote-stage .remote-preview article .remote-selected{box-shadow:-5px 0 #a9cda9;padding-left:10px}
+.remote-stage .remote-preview article .remote-current{border-left:3px solid #b9dba8;padding-left:9px;background:#29432e55}
 .remote-stage .remote-console{flex:none;max-height:min(47vh,380px);overflow:auto;padding:12px clamp(16px,3vw,34px) 22px;border-top:1px solid #344139;background:#1a251d;scrollbar-color:#536554 #1a251d}
 .remote-stage .remote-console-head{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
 .remote-stage .remote-console-head strong{font-size:14px}
@@ -504,3 +512,15 @@ dialog button:disabled,.auth-card button:disabled{opacity:.5;cursor:default}
 .remote-stage #remote-test-speed{width:100%;min-height:42px;margin-top:9px;border:1px solid #50674f;background:#26372b;color:#e7f0e3;font-weight:600}
 .remote-stage #remote-test-speed[aria-pressed=true]{background:#b8d29d;border-color:#b8d29d;color:#1b2c1c}
 @media(max-width:600px){.remote-stage #remote-test-speed{min-height:48px}}
+
+@media(max-width:600px){
+ #dialog.remote-stage{width:100%;max-width:100%}
+ .remote-stage #remote-content,.remote-stage .remote-console,.remote-stage .remote-console-body,.remote-stage .remote-more,.remote-stage .remote-control-section{min-width:0;max-width:100%}
+ .remote-stage .remote-console{overflow-x:hidden}
+ .remote-stage .remote-more .remote-field-grid{grid-template-columns:minmax(0,1fr)}
+ .remote-stage .remote-more .remote-field,.remote-stage .remote-more select,.remote-stage .remote-more .remote-stepper{width:100%;max-width:100%;min-width:0}
+ .remote-stage .remote-more .remote-control-grid,.remote-stage .remote-more .remote-line-spacing{width:100%;max-width:100%}
+ .remote-stage .remote-console-footer{flex-wrap:wrap}
+ .remote-stage .remote-playhead{padding:6px 14px;gap:8px}
+ .remote-stage .remote-playhead span{display:none}
+}

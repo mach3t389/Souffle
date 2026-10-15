@@ -20,8 +20,10 @@ header #title { margin:0 14px; overflow:hidden; text-overflow:ellipsis; white-sp
 #viewport { overflow-y:auto; flex:1; min-height:0; position:relative; z-index:0; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 #viewport::-webkit-scrollbar { display:none; }
 #text-track { overflow:hidden; }
-#text { max-width:1000px; margin:0 auto; padding:24vh 9% 70vh; line-height:1.4; word-break:normal; overflow-wrap:break-word; word-wrap:break-word; -webkit-hyphens:manual; hyphens:manual; }
+#text { max-width:1000px; margin:0 auto; padding:24vh 9% 70vh; line-height:1.4; word-break:normal; overflow-wrap:normal; word-wrap:normal; }
 #text p { margin:0 0 .75em; }
+#text .reader-word { display:inline-block; white-space:nowrap; vertical-align:baseline; }
+#text .reader-word-long { display:inline; white-space:normal; overflow-wrap:anywhere; word-wrap:break-word; -webkit-hyphens:auto; hyphens:auto; }
 #text h1 { font-size:1.5em; line-height:1.3; }
 #text h2 { font-size:1.25em; }
 #text h3 { font-size:1.1em; }
